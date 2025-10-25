@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ITIL Quest</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>ITIL Quest</h1>
+    <nav>
+      <button data-view="phase1">Fase 1: Ordenação</button>
+      <button data-view="phase2">Fase 2: Associação</button>
+      <button data-view="phase3">Fase 3: Decisão</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="status">
+      <span id="status-text">Carregando…</span>
+    </section>
+
+    <section id="phase1" class="view hidden">
+      <h2>Fase 1 — Sequência de Fluxo (Ordenação)</h2>
+      <div class="row">
+        <div class="col">
+          <label for="p1-question">Questão:</label>
+          <select id="p1-question"></select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <h3>Opções</h3>
+          <ul id="p1-choices" class="list"></ul>
+        </div>
+        <div class="col">
+          <h3>Sua Ordem</h3>
+          <ol id="p1-answer" class="list"></ol>
+          <div class="buttons">
+            <button id="p1-reset">Limpar</button>
+            <button id="p1-validate" disabled>Validar</button>
+          </div>
+        </div>
+      </div>
+      <div id="p1-result" class="result"></div>
+    </section>
+
+    <section id="phase2" class="view hidden">
+      <h2>Fase 2 — Conexão de Conceitos (Associação)</h2>
+      <div class="row">
+        <div class="col">
+          <label for="p2-activity">Atividade:</label>
+          <select id="p2-activity"></select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <h3>Práticas</h3>
+          <div id="p2-practices" class="checkboxes"></div>
+          <div class="buttons">
+            <button id="p2-validate">Validar</button>
+          </div>
+        </div>
+      </div>
+      <div id="p2-result" class="result"></div>
+    </section>
+
+    <section id="phase3" class="view hidden">
+      <h2>Fase 3 — Escolha do Caminho (Decisão)</h2>
+      <div class="row">
+        <div class="col">
+          <label for="p3-scenario">Cenário:</label>
+          <select id="p3-scenario"></select>
+        </div>
+      </div>
+      <div id="p3-input" class="callout"></div>
+      <div id="p3-options" class="pill-options"></div>
+      <div class="buttons">
+        <button id="p3-validate" disabled>Validar</button>
+      </div>
+      <div id="p3-result" class="result"></div>
+    </section>
+  </main>
+
+  <script src="app.js" type="module"></script>
+  
+</body>
+</html>
