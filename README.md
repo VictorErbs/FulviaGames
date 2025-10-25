@@ -1,59 +1,55 @@
-# ITIL Quest: A Jornada do Serviço# ITIL Quest: A Jornada do Serviço — Backend
-
-
-
-Jogo educativo de ITIL 4 para memorizar e entender a Cadeia de Valor e suas práticas.Este repositório contém apenas o back-end (API) para o jogo educativo de ITIL 4 descrito como “ITIL Flow Challenge / ITIL Quest”. O front-end será desenvolvido separadamente.
-
-
-
-## Sobre o jogo## Principais funcionalidades
-
-
-
-**ITIL Quest** é um jogo de quiz com três fases interativas:- Fase 1 (Ordenação): perguntas de arrastar-e-soltar para ordenar as 6 atividades da Cadeia de Valor.
-
-- Fase 2 (Associação): selecionar práticas ITIL que pertencem primariamente a uma atividade.
-
-- **Fase 1 (Ordenação)**: Ordene as 6 atividades da Cadeia de Valor em sequências lógicas de fluxo.- Fase 3 (Decisão): escolher a primeira atividade a ser acionada para um cenário textual (input) dado.
-
-- **Fase 2 (Associação)**: Associe práticas ITIL à atividade primária a que mais contribuem.
-
-- **Fase 3 (Decisão)**: Escolha qual atividade deve ser acionada primeiro em cenários reais.## Stack
-
-
-
-## Estrutura do projeto- Node.js + Express
-
-- CORS habilitado para consumo pelo front-end
-
-Este repositório está organizado em duas pastas independentes:
-
-## Como executar
-
-- **`backend/`** — API REST (Node.js + Express) que valida as respostas e fornece as questões.
-
-- **`frontend/`** — Interface estática básica (HTML/CSS/JS) que consome a API.1) Instale dependências:
-
-
-
-## Como rodar```powershell
-
 # FulviaGames — ITIL Quest
+
+Jogo educativo de ITIL 4 para memorizar e entender a Cadeia de Valor e suas práticas.
+
+## Principais funcionalidades
+
+**ITIL Quest** é um jogo de quiz com três fases interativas:
+
+- Fase 1 (Ordenação): ordene as 6 atividades da Cadeia de Valor em um fluxo lógico.
+- Fase 2 (Associação): associe práticas ITIL à atividade primária onde mais contribuem.
+- Fase 3 (Decisão): escolha a atividade correta a partir de cenários reais (inputs).
+
+## Stack
+
+- Backend: Node.js + Express (CORS habilitado)
+- Frontend: HTML/CSS/JavaScript estático
+
+## Estrutura do projeto
+
+```text
+backend/           # API Express (Node.js)
+	package.json
+	src/
+		server.js
+		data/
+			activities.js
+			practices.js
+			phase1.js
+			phase3.js
+
+frontend/          # Front-end estático (HTML/CSS/JS)
+	package.json
+	public/
+		index.html
+		styles.css
+		app.js
+	scripts/
+		server.js      # Servidor estático para desenvolvimento
+
+README.md          # Este arquivo (visão geral)
+DEV_README.md      # Guia detalhado para devs (como editar e expandir)
+```
+
+## Como executar (desenvolvimento)
 
 ### Backend (API)
 
-Este repositório agora está organizado em duas pastas:
-
 ```powershell
-
-cd backend- `backend/` — API (Node.js + Express) para as fases do jogo.
-
-npm install- `frontend/` — Front-end estático básico para validar a integração com a API.
-
+cd backend
+npm install
 npm start
-
-# API disponível em http://localhost:3000 Para instruções detalhadas de desenvolvimento (como editar front e back), consulte `DEV_README.md` na raiz do projeto.
-
+# API disponível em http://localhost:3000
 ```
 
 ### Frontend (Dev)
@@ -65,11 +61,32 @@ npm run dev
 # Interface em http://localhost:5500
 ```
 
+## API (resumo)
+
+- GET /api/health — status da API
+- GET /api/meta — metadados do jogo (título, fases, atividades)
+- GET /api/activities — lista das 6 atividades
+
+Fase 1 (Ordenação)
+
+- GET /api/phase1/questions — questões com opções embaralhadas
+- POST /api/phase1/validate — valida a ordem enviada
+
+Fase 2 (Associação)
+
+- GET /api/phase2/options — atividades e práticas
+- POST /api/phase2/validate — valida práticas selecionadas para uma atividade
+
+Fase 3 (Decisão)
+
+- GET /api/phase3/scenarios — cenários (opções: 6 atividades)
+- POST /api/phase3/validate — valida atividade escolhida
+
 ## Para desenvolvedores
 
-Se você quer **editar conteúdo** (adicionar questões, cenários, práticas) ou **melhorar o front-end**, consulte o guia completo em:
+Para adicionar questões, cenários, práticas ou evoluir o front/back, consulte:
 
-👉 **[DEV_README.md](./DEV_README.md)**
+👉 [DEV_README.md](./DEV_README.md)
 
 ## Licença
 
