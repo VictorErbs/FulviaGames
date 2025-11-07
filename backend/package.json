@@ -1,13 +1,24 @@
 {
   "name": "itil-quest-backend",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Backend API for ITIL Quest: A Jornada do Serviço - quiz game modes (ordenação, associação, decisão)",
+  "description": "🎮 Backend API Lúdico para ITIL Quest: A Jornada do Serviço - Sistema gamificado com XP, conquistas, combos e muito mais!",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node test-client.js",
+    "dev": "node --watch src/server.js"
   },
+  "keywords": [
+    "itil",
+    "gamification",
+    "learning",
+    "quiz",
+    "achievements",
+    "xp-system",
+    "interactive"
+  ],
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2"

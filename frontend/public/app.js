@@ -1,278 +1,793 @@
 const API_BASE = 'http://localhost:3000/api';
 
-const els = {
-  views: {
-    phase1: document.getElementById('phase1'),
-    phase2: document.getElementById('phase2'),
-    phase3: document.getElementById('phase3')
-  },
-  statusText: document.getElementById('status-text'),
-  p1Question: document.getElementById('p1-question'),
-  p1Choices: document.getElementById('p1-choices'),
-  p1Answer: document.getElementById('p1-answer'),
-  p1Reset: document.getElementById('p1-reset'),
-  p1Validate: document.getElementById('p1-validate'),
-  p1Result: document.getElementById('p1-result'),
-  p2Activity: document.getElementById('p2-activity'),
-  p2Practices: document.getElementById('p2-practices'),
-  p2Validate: document.getElementById('p2-validate'),
-  p2Result: document.getElementById('p2-result'),
-  p3Scenario: document.getElementById('p3-scenario'),
-  p3Input: document.getElementById('p3-input'),
-  p3Options: document.getElementById('p3-options'),
-  p3Validate: document.getElementById('p3-validate'),
-  p3Result: document.getElementById('p3-result'),
-};
-
+// ============================================
+// ESTADO GLOBAL
+// ============================================
 const state = {
+  playerId: localStorage.getItem('itil-quest-player-id'),
+  playerData: null,
   meta: null,
   p1Questions: [],
   p1Answer: [],
   p2Data: { activities: [], practices: [] },
   p3Scenarios: [],
   p3Choice: null,
+  currentQuestion: null,
+  currentActivity: null,
+  currentScenario: null,
 };
 
-function showView(viewId) {
-  for (const id of Object.keys(els.views)) {
-    els.views[id].classList.toggle('hidden', id !== viewId);
-  }
-}
-
-function setStatus(text) {
-  els.statusText.textContent = text || '';
-}
-
+// ============================================
+// FUNÇÕES AUXILIARES
+// ============================================
 async function getJson(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, options);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
-(function initNav() {
-  document.querySelectorAll('nav [data-view]').forEach(btn => {
-    btn.addEventListener('click', () => showView(btn.dataset.view));
+function showView(viewId) {
+  document.querySelectorAll('.view').forEach(view => {
+    view.classList.toggle('hidden', view.id !== viewId);
   });
-})();
-
-async function init() {
-  try {
-    setStatus('Carregando metadados…');
-    state.meta = await getJson('/meta');
-    setStatus('Carregando dados das fases…');
-    const [p1Qs, p2Opts, p3Scens] = await Promise.all([
-      getJson('/phase1/questions'),
-      getJson('/phase2/options'),
-      getJson('/phase3/scenarios'),
-    ]);
-
-    state.p1Questions = p1Qs;
-    els.p1Question.innerHTML = '';
-    for (const q of state.p1Questions) {
-      const opt = document.createElement('option');
-      opt.value = q.id;
-      opt.textContent = q.title;
-      els.p1Question.appendChild(opt);
-    }
-    els.p1Question.addEventListener('change', renderP1Choices);
-    els.p1Reset.addEventListener('click', () => { state.p1Answer = []; renderP1Answer(); });
-    els.p1Validate.addEventListener('click', validateP1);
-    renderP1Choices();
-
-    state.p2Data = p2Opts;
-    els.p2Activity.innerHTML = '';
-    for (const act of state.p2Data.activities) {
-      const opt = document.createElement('option');
-      opt.value = act.id;
-      opt.textContent = `${act.label}`;
-      els.p2Activity.appendChild(opt);
-    }
-    renderP2Practices();
-    els.p2Activity.addEventListener('change', () => { els.p2Result.textContent = ''; renderP2Practices(); });
-    els.p2Validate.addEventListener('click', validateP2);
-
-    state.p3Scenarios = p3Scens;
-    els.p3Scenario.innerHTML = '';
-    for (const s of state.p3Scenarios) {
-      const opt = document.createElement('option');
-      opt.value = s.id;
-      opt.textContent = s.input.slice(0, 80) + (s.input.length > 80 ? '…' : '');
-      els.p3Scenario.appendChild(opt);
-    }
-    els.p3Scenario.addEventListener('change', renderP3Scenario);
-    els.p3Validate.addEventListener('click', validateP3);
-    renderP3Scenario();
-
-    setStatus('Pronto. Selecione uma fase acima.');
-    showView('phase1');
-  } catch (err) {
-    console.error(err);
-    setStatus('Erro ao carregar. Verifique se a API está em execução.');
-  }
-}
-
-function currentP1Question() {
-  const id = els.p1Question.value;
-  return state.p1Questions.find(q => q.id === id) || state.p1Questions[0];
-}
-
-function renderP1Choices() {
-  const q = currentP1Question();
-  state.p1Answer = [];
-  els.p1Answer.innerHTML = '';
-  els.p1Choices.innerHTML = '';
-  els.p1Result.textContent = '';
-  (q?.choices || []).forEach(act => {
-    const li = document.createElement('li');
-    li.textContent = act.label;
-    const addBtn = document.createElement('button');
-    addBtn.textContent = '+';
-    addBtn.addEventListener('click', () => {
-      if (!state.p1Answer.includes(act.id)) {
-        state.p1Answer.push(act.id);
-        renderP1Answer();
-      }
-    });
-    li.appendChild(addBtn);
-    els.p1Choices.appendChild(li);
+  
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === viewId);
   });
-  els.p1Validate.disabled = true;
 }
 
-function renderP1Answer() {
-  els.p1Answer.innerHTML = '';
-  state.p1Answer.forEach((id, idx) => {
-    const act = (state.meta.activities || []).find(a => a.id === id);
-    const li = document.createElement('li');
-    li.textContent = `${idx + 1}. ${act?.label || id}`;
-    const up = document.createElement('button');
-    up.textContent = '↑';
-    up.addEventListener('click', () => {
-      if (idx > 0) {
-        [state.p1Answer[idx - 1], state.p1Answer[idx]] = [state.p1Answer[idx], state.p1Answer[idx - 1]];
-        renderP1Answer();
-      }
-    });
-    const down = document.createElement('button');
-    down.textContent = '↓';
-    down.addEventListener('click', () => {
-      if (idx < state.p1Answer.length - 1) {
-        [state.p1Answer[idx + 1], state.p1Answer[idx]] = [state.p1Answer[idx], state.p1Answer[idx + 1]];
-        renderP1Answer();
-      }
-    });
-    const remove = document.createElement('button');
-    remove.textContent = 'x';
-    remove.addEventListener('click', () => {
-      state.p1Answer = state.p1Answer.filter(v => v !== id);
-      renderP1Answer();
-    });
-    li.append(up, down, remove);
-    els.p1Answer.appendChild(li);
-  });
-  els.p1Validate.disabled = state.p1Answer.length !== 6;
-}
-
-async function validateP1() {
-  const q = currentP1Question();
-  try {
-    const res = await getJson('/phase1/validate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ questionId: q.id, answer: state.p1Answer })
-    });
-    els.p1Result.innerHTML = `Resultado: <strong>${res.correct ? 'Correto' : 'Incorreto'}</strong>`;
-    if (!res.correct && Array.isArray(res.diffs)) {
-      const diffs = res.diffs
-        .map(d => `${d.position + 1}: esperado ${labelOf(d.expected)}, recebeu ${labelOf(d.got)}`)
-        .join('<br/>');
-      els.p1Result.innerHTML += `<div class="mt">Diferenças:<br/>${diffs}</div>`;
-    }
-  } catch {
-    els.p1Result.textContent = 'Erro ao validar.';
-  }
+function showGlobalMessage(message, type = 'info', emoji = '💬') {
+  const messageDiv = document.getElementById('global-message');
+  messageDiv.innerHTML = `
+    <div class="message-content ${type} animate-slide-in">
+      <span class="message-emoji">${emoji}</span>
+      <span class="message-text">${message}</span>
+    </div>
+  `;
+  messageDiv.classList.add('show');
+  
+  setTimeout(() => messageDiv.classList.remove('show'), 5000);
 }
 
 function labelOf(activityId) {
-  const act = (state.meta.activities || []).find(a => a.id === activityId);
+  const act = (state.meta?.activities || []).find(a => a.id === activityId);
   return act ? act.label : activityId;
 }
 
-function renderP2Practices() {
-  const data = state.p2Data;
-  els.p2Practices.innerHTML = '';
-  data.practices.forEach(p => {
-    const id = `p2p-${p.id}`;
-    const label = document.createElement('label');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.value = p.id;
-    checkbox.id = id;
-    label.htmlFor = id;
-    label.textContent = p.label;
-    label.prepend(checkbox);
-    els.p2Practices.appendChild(label);
+// ============================================
+// SISTEMA DE JOGADOR
+// ============================================
+async function initPlayer() {
+  const modal = document.getElementById('welcome-modal');
+  const input = document.getElementById('player-name-input');
+  const startBtn = document.getElementById('start-game-btn');
+
+  if (state.playerId) {
+    modal.classList.add('hidden');
+    await loadPlayerData();
+    return;
+  }
+
+  modal.classList.remove('hidden');
+  
+  startBtn.onclick = async () => {
+    const playerName = input.value.trim() || 'Jogador Anônimo';
+    
+    try {
+      const response = await getJson('/player/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerName })
+      });
+      
+      state.playerId = response.session.id;
+      state.playerData = response.session;
+      localStorage.setItem('itil-quest-player-id', state.playerId);
+      
+      modal.classList.add('hidden');
+      showGlobalMessage(response.welcome, 'success', '🎉');
+      updatePlayerUI();
+      
+    } catch (error) {
+      showGlobalMessage('Erro ao criar sessão. Verifique se o servidor está rodando!', 'error', '❌');
+    }
+  };
+  
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') startBtn.click();
   });
 }
 
-async function validateP2() {
+async function loadPlayerData() {
+  if (!state.playerId) return;
+  
   try {
-    const activityId = els.p2Activity.value;
-    const selected = Array.from(els.p2Practices.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value);
-    const res = await getJson('/phase2/validate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ activityId, selectedPracticeIds: selected })
-    });
-    els.p2Result.innerHTML = `
-      <div>Acertos: ${res.correctMatches.length}</div>
-      <div>Erros: ${res.wrongSelections.length}</div>
-      <div>Faltaram: ${res.missed.length}</div>
-      <div>Score: ${(res.score * 100).toFixed(0)}%</div>
-    `;
-  } catch {
-    els.p2Result.textContent = 'Erro ao validar.';
+    const stats = await getJson(`/player/${state.playerId}/stats`);
+    state.playerData = stats;
+    updatePlayerUI();
+  } catch (error) {
+    console.error('Erro ao carregar dados do jogador:', error);
   }
 }
 
-function renderP3Scenario() {
-  const id = els.p3Scenario.value;
-  const s = state.p3Scenarios.find(x => x.id === id) || state.p3Scenarios[0];
-  els.p3Input.textContent = s?.input || '';
-  els.p3Options.innerHTML = '';
+function updatePlayerUI() {
+  if (!state.playerData) return;
+  
+  const data = state.playerData;
+  
+  document.getElementById('player-name').textContent = data.name;
+  document.getElementById('player-level-badge').textContent = `Nível ${data.level}`;
+  document.getElementById('player-ranking').textContent = data.ranking || '🌱 Aprendiz';
+  
+  const xpNeeded = data.nextLevel?.xpNeeded || data.level * 100;
+  const xpCurrent = data.nextLevel?.xpCurrent ?? data.xp;
+  const xpProgress = data.nextLevel?.progress || Math.floor((xpCurrent / xpNeeded) * 100);
+  
+  document.getElementById('xp-bar').style.width = `${xpProgress}%`;
+  document.getElementById('xp-text').textContent = `${xpCurrent}/${xpNeeded}`;
+  document.getElementById('total-score').textContent = data.totalScore.toLocaleString();
+  
+  const achievementsCount = data.achievements?.length || 0;
+  document.getElementById('achievements-count').textContent = `${achievementsCount}/8`;
+  
+  if (data.combo > 0) {
+    document.getElementById('combo-indicator').innerHTML = `
+      <div class="combo-fire pulse-animation">
+        🔥 COMBO x${data.combo}!
+      </div>
+    `;
+  } else {
+    document.getElementById('combo-indicator').innerHTML = '';
+  }
+}
+
+// ============================================
+// ANIMAÇÕES E MODAIS
+// ============================================
+function showAchievementModal(achievementData) {
+  if (!achievementData.unlocked) return;
+  
+  const modal = document.getElementById('achievement-modal');
+  modal.innerHTML = `
+    <div class="achievement-content animate-zoom-in">
+      <div class="achievement-glow"></div>
+      <div class="achievement-emoji">${achievementData.achievement.emoji}</div>
+      <h2>🎉 Conquista Desbloqueada!</h2>
+      <h3>${achievementData.achievement.name}</h3>
+      <p>${achievementData.achievement.description}</p>
+      <button class="btn-primary" onclick="this.closest('.modal').classList.add('hidden')">
+        Incrível! ✨
+      </button>
+    </div>
+  `;
+  modal.classList.remove('hidden');
+  setTimeout(() => modal.classList.add('hidden'), 5000);
+}
+
+function showLevelUpModal(levelUpData) {
+  const modal = document.getElementById('levelup-overlay');
+  modal.innerHTML = `
+    <div class="levelup-content animate-scale-in">
+      <div class="levelup-sparkles">✨✨✨</div>
+      <h1 class="levelup-text">LEVEL UP!</h1>
+      <div class="new-level">
+        <span class="level-number">${levelUpData.newLevel}</span>
+      </div>
+      <p>${levelUpData.message}</p>
+      <div class="levelup-rays"></div>
+    </div>
+  `;
+  modal.classList.remove('hidden');
+  setTimeout(() => modal.classList.add('hidden'), 3000);
+}
+
+function displayFeedback(result, targetElement) {
+  const isSuccess = result.correct || result.score === 1;
+  const emoji = result.emoji || (isSuccess ? '🌟' : '🤔');
+  
+  let html = `
+    <div class="feedback-card ${isSuccess ? 'success' : 'partial'} animate-slide-in">
+      <div class="feedback-emoji">${emoji}</div>
+      <h3>${result.feedback || result.message || ''}</h3>
+  `;
+  
+  if (result.accuracy) html += `<div class="feedback-stat">📊 Precisão: <strong>${result.accuracy}</strong></div>`;
+  if (result.percentage) html += `<div class="feedback-stat">📈 Pontuação: <strong>${result.percentage}</strong></div>`;
+  if (result.score !== undefined && typeof result.score === 'number') {
+    html += `<div class="feedback-stat">⭐ Pontos: <strong>+${Math.floor(result.score * 100)}</strong></div>`;
+  }
+  if (result.xpGained) html += `<div class="feedback-stat highlight">✨ XP Ganho: <strong>+${result.xpGained}</strong></div>`;
+  if (result.bonus) html += `<div class="feedback-bonus">${result.bonus}</div>`;
+  if (result.comboMessage) html += `<div class="feedback-combo">${result.comboMessage}</div>`;
+  if (result.tip) html += `<div class="feedback-tip">💡 ${result.tip}</div>`;
+  if (result.explanation) html += `<div class="feedback-explanation">${result.explanation}</div>`;
+  if (result.correctActivity || result.correctActivityId) {
+    html += `<div class="feedback-stat">✅ Resposta correta: <strong>${result.correctActivity || labelOf(result.correctActivityId)}</strong></div>`;
+  }
+  
+  html += `</div>`;
+  targetElement.innerHTML = html;
+  
+  if (result.achievements && result.achievements.length > 0) {
+    result.achievements.forEach(ach => {
+      if (ach.unlocked) setTimeout(() => showAchievementModal(ach), 500);
+    });
+  }
+  
+  if (result.levelUp && result.levelUp.leveledUp) {
+    setTimeout(() => showLevelUpModal(result.levelUp), 1000);
+  }
+  
+  if (result.playerStats) {
+    state.playerData = { ...state.playerData, ...result.playerStats };
+    updatePlayerUI();
+  }
+}
+
+// ============================================
+// FASE 1: ORDENAÇÃO
+// ============================================
+async function loadPhase1() {
+  try {
+    const response = await getJson('/phase1/questions');
+    state.p1Questions = response.questions || response;
+    
+    if (response.message) showGlobalMessage(response.message, 'info', '🚀');
+    
+    const select = document.getElementById('p1-question');
+    select.innerHTML = '';
+    
+    state.p1Questions.forEach(q => {
+      const option = document.createElement('option');
+      option.value = q.id;
+      option.textContent = q.title.replace('🎯 ', '');
+      select.appendChild(option);
+    });
+    
+    renderPhase1Question();
+  } catch (error) {
+    showGlobalMessage('Erro ao carregar questões da Fase 1', 'error', '❌');
+  }
+}
+
+function renderPhase1Question() {
+  const select = document.getElementById('p1-question');
+  const question = state.p1Questions.find(q => q.id === select.value) || state.p1Questions[0];
+  
+  if (!question) return;
+  
+  state.currentQuestion = question;
+  state.p1Answer = [];
+  
+  document.getElementById('p1-description').textContent = question.description;
+  document.getElementById('p1-difficulty').textContent = question.difficulty || '⭐ Iniciante';
+  document.getElementById('p1-result').innerHTML = '';
+  
+  const choicesDiv = document.getElementById('p1-choices');
+  choicesDiv.innerHTML = '';
+  
+  (question.choices || []).forEach(activity => {
+    const card = document.createElement('div');
+    card.className = 'choice-card';
+    card.innerHTML = `
+      <span class="choice-emoji">🎯</span>
+      <span class="choice-label">${activity.label}</span>
+      <button class="btn-add">+</button>
+    `;
+    
+    card.querySelector('.btn-add').onclick = () => {
+      if (!state.p1Answer.includes(activity.id)) {
+        state.p1Answer.push(activity.id);
+        renderPhase1Answer();
+      }
+    };
+    
+    choicesDiv.appendChild(card);
+  });
+  
+  renderPhase1Answer();
+}
+
+function renderPhase1Answer() {
+  const answerDiv = document.getElementById('p1-answer');
+  answerDiv.innerHTML = '';
+  
+  if (state.p1Answer.length === 0) {
+    answerDiv.innerHTML = '<div class="empty-state">Clique em + nas opções para adicionar</div>';
+  }
+  
+  state.p1Answer.forEach((id, index) => {
+    const activity = state.meta.activities.find(a => a.id === id);
+    const card = document.createElement('div');
+    card.className = 'answer-card';
+    card.innerHTML = `
+      <span class="answer-number">${index + 1}</span>
+      <span class="answer-label">${activity?.label || id}</span>
+      <div class="answer-controls">
+        <button class="btn-icon ${index === 0 ? 'disabled' : ''}" ${index === 0 ? 'disabled' : ''}>↑</button>
+        <button class="btn-icon ${index === state.p1Answer.length - 1 ? 'disabled' : ''}" ${index === state.p1Answer.length - 1 ? 'disabled' : ''}>↓</button>
+        <button class="btn-icon remove">×</button>
+      </div>
+    `;
+    
+    const controls = card.querySelectorAll('.btn-icon');
+    controls[0].onclick = () => {
+      if (index > 0) {
+        [state.p1Answer[index - 1], state.p1Answer[index]] = [state.p1Answer[index], state.p1Answer[index - 1]];
+        renderPhase1Answer();
+      }
+    };
+    controls[1].onclick = () => {
+      if (index < state.p1Answer.length - 1) {
+        [state.p1Answer[index], state.p1Answer[index + 1]] = [state.p1Answer[index + 1], state.p1Answer[index]];
+        renderPhase1Answer();
+      }
+    };
+    controls[2].onclick = () => {
+      state.p1Answer = state.p1Answer.filter(v => v !== id);
+      renderPhase1Answer();
+    };
+    
+    answerDiv.appendChild(card);
+  });
+  
+  document.getElementById('p1-validate').disabled = state.p1Answer.length !== 6;
+}
+
+async function validatePhase1() {
+  try {
+    const result = await getJson('/phase1/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        questionId: state.currentQuestion.id,
+        answer: state.p1Answer,
+        playerId: state.playerId
+      })
+    });
+    
+    displayFeedback(result, document.getElementById('p1-result'));
+    await loadPlayerData();
+  } catch (error) {
+    showGlobalMessage('Erro ao validar resposta', 'error', '❌');
+  }
+}
+
+async function showPhase1Hint() {
+  try {
+    const response = await getJson(`/phase1/hint/${state.currentQuestion.id}?playerId=${state.playerId}`);
+    showGlobalMessage(response.hint, 'info', response.emoji);
+  } catch (error) {
+    showGlobalMessage('Erro ao obter dica', 'error', '❌');
+  }
+}
+
+// ============================================
+// FASE 2: ASSOCIAÇÃO
+// ============================================
+async function loadPhase2() {
+  try {
+    const response = await getJson('/phase2/options');
+    state.p2Data = response;
+    
+    if (response.message) showGlobalMessage(response.message, 'info', '🧩');
+    
+    const select = document.getElementById('p2-activity');
+    select.innerHTML = '';
+    
+    response.activities.forEach(activity => {
+      const option = document.createElement('option');
+      option.value = activity.id;
+      option.textContent = activity.label;
+      select.appendChild(option);
+    });
+    
+    renderPhase2Practices();
+  } catch (error) {
+    showGlobalMessage('Erro ao carregar Fase 2', 'error', '❌');
+  }
+}
+
+function renderPhase2Practices() {
+  const practicesDiv = document.getElementById('p2-practices');
+  practicesDiv.innerHTML = '';
+  document.getElementById('p2-result').innerHTML = '';
+  
+  state.p2Data.practices.forEach(practice => {
+    const card = document.createElement('label');
+    card.className = 'practice-card';
+    card.innerHTML = `
+      <input type="checkbox" value="${practice.id}">
+      <span class="practice-emoji">⚙️</span>
+      <span class="practice-label">${practice.label}</span>
+      <span class="practice-check">✓</span>
+    `;
+    practicesDiv.appendChild(card);
+  });
+}
+
+async function validatePhase2() {
+  try {
+    const activityId = document.getElementById('p2-activity').value;
+    const selected = Array.from(document.querySelectorAll('#p2-practices input:checked')).map(i => i.value);
+    
+    const result = await getJson('/phase2/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        activityId,
+        selectedPracticeIds: selected,
+        playerId: state.playerId
+      })
+    });
+    
+    displayFeedback(result, document.getElementById('p2-result'));
+    await loadPlayerData();
+  } catch (error) {
+    showGlobalMessage('Erro ao validar resposta', 'error', '❌');
+  }
+}
+
+async function showPhase2Hint() {
+  try {
+    const response = await getJson('/phase2/hint');
+    let message = response.hint;
+    if (response.extraTips && response.extraTips.length > 0) {
+      message += '\n\n' + response.extraTips.slice(0, 3).join('\n');
+    }
+    showGlobalMessage(message, 'info', response.emoji);
+  } catch (error) {
+    showGlobalMessage('Erro ao obter dica', 'error', '❌');
+  }
+}
+
+// ============================================
+// FASE 3: DECISÃO
+// ============================================
+async function loadPhase3() {
+  try {
+    const response = await getJson('/phase3/scenarios');
+    state.p3Scenarios = response.scenarios || response;
+    
+    if (response.message) showGlobalMessage(response.message, 'info', '🗺️');
+    
+    const select = document.getElementById('p3-scenario');
+    select.innerHTML = '';
+    
+    state.p3Scenarios.forEach(scenario => {
+      const option = document.createElement('option');
+      option.value = scenario.id;
+      option.textContent = scenario.input.replace('🎭 ', '').slice(0, 60) + '...';
+      select.appendChild(option);
+    });
+    
+    renderPhase3Scenario();
+  } catch (error) {
+    showGlobalMessage('Erro ao carregar Fase 3', 'error', '❌');
+  }
+}
+
+function renderPhase3Scenario() {
+  const select = document.getElementById('p3-scenario');
+  const scenario = state.p3Scenarios.find(s => s.id === select.value) || state.p3Scenarios[0];
+  
+  if (!scenario) return;
+  
+  state.currentScenario = scenario;
   state.p3Choice = null;
-  els.p3Validate.disabled = true;
-
-  (state.meta.activities || []).forEach(a => {
-    const b = document.createElement('button');
-    b.textContent = a.label;
-    b.addEventListener('click', () => {
-      state.p3Choice = a.id;
-      els.p3Validate.disabled = false;
-      els.p3Options.querySelectorAll('button').forEach(x => x.classList.remove('selected'));
-      b.classList.add('selected');
-    });
-    els.p3Options.appendChild(b);
+  
+  document.getElementById('p3-input').textContent = scenario.input.replace('🎭 ', '');
+  document.getElementById('p3-result').innerHTML = '';
+  document.getElementById('p3-validate').disabled = true;
+  
+  const optionsDiv = document.getElementById('p3-options');
+  optionsDiv.innerHTML = '';
+  
+  (scenario.options || state.meta.activities).forEach(activity => {
+    const button = document.createElement('button');
+    button.className = 'option-card';
+    button.innerHTML = `
+      <span class="option-emoji">🎯</span>
+      <span class="option-label">${activity.label}</span>
+    `;
+    
+    button.onclick = () => {
+      state.p3Choice = activity.id;
+      document.getElementById('p3-validate').disabled = false;
+      optionsDiv.querySelectorAll('.option-card').forEach(b => b.classList.remove('selected'));
+      button.classList.add('selected');
+    };
+    
+    optionsDiv.appendChild(button);
   });
 }
 
-async function validateP3() {
+async function validatePhase3() {
   try {
-    const scenarioId = els.p3Scenario.value;
-    const res = await getJson('/phase3/validate', {
+    const result = await getJson('/phase3/validate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scenarioId, choiceActivityId: state.p3Choice })
+      body: JSON.stringify({
+        scenarioId: state.currentScenario.id,
+        choiceActivityId: state.p3Choice,
+        playerId: state.playerId
+      })
     });
-    els.p3Result.innerHTML = `
-      <div>Resultado: <strong>${res.correct ? 'Correto' : 'Incorreto'}</strong></div>
-      <div>Resposta correta: ${labelOf(res.correctActivityId)}</div>
-      <div>Explicação: ${res.explanation}</div>
-      ${res.nextInput ? `<div>Próximo input: ${res.nextInput}</div>` : ''}
-    `;
-  } catch {
-    els.p3Result.textContent = 'Erro ao validar.';
+    
+    displayFeedback(result, document.getElementById('p3-result'));
+    await loadPlayerData();
+  } catch (error) {
+    showGlobalMessage('Erro ao validar resposta', 'error', '❌');
   }
 }
 
-init();
+async function showPhase3Hint() {
+  try {
+    const response = await getJson('/phase3/hint');
+    let message = response.hint;
+    if (response.strategicTips && response.strategicTips.length > 0) {
+      message += '\n\n' + response.strategicTips.slice(0, 3).join('\n');
+    }
+    showGlobalMessage(message, 'info', response.emoji);
+  } catch (error) {
+    showGlobalMessage('Erro ao obter dica', 'error', '❌');
+  }
+}
+
+// ============================================
+// CONQUISTAS E ESTATÍSTICAS
+// ============================================
+async function loadAchievements() {
+  if (!state.playerId) return;
+  
+  try {
+    const response = await getJson(`/player/${state.playerId}/achievements`);
+    const container = document.getElementById('achievements-list');
+    const progress = document.getElementById('achievements-progress');
+    
+    progress.innerHTML = `
+      <div class="progress-header">
+        <h3>Progresso: ${response.progress} (${response.percentage}%)</h3>
+        <div class="progress-bar-full">
+          <div class="progress-bar-fill" style="width: ${response.percentage}%"></div>
+        </div>
+      </div>
+    `;
+    
+    container.innerHTML = '';
+    
+    if (response.unlocked.length > 0) {
+      const unlockedSection = document.createElement('div');
+      unlockedSection.className = 'achievements-section';
+      unlockedSection.innerHTML = '<h3>✨ Conquistas Desbloqueadas</h3>';
+      
+      response.unlocked.forEach(ach => {
+        const card = document.createElement('div');
+        card.className = 'achievement-card unlocked';
+        card.innerHTML = `
+          <div class="achievement-icon">${ach.emoji}</div>
+          <div class="achievement-info">
+            <h4>${ach.name}</h4>
+            <p>${ach.description}</p>
+          </div>
+          <div class="achievement-badge">✅</div>
+        `;
+        unlockedSection.appendChild(card);
+      });
+      
+      container.appendChild(unlockedSection);
+    }
+    
+    if (response.locked.length > 0) {
+      const lockedSection = document.createElement('div');
+      lockedSection.className = 'achievements-section';
+      lockedSection.innerHTML = '<h3>🔒 A Desbloquear</h3>';
+      
+      response.locked.forEach(ach => {
+        const card = document.createElement('div');
+        card.className = 'achievement-card locked';
+        card.innerHTML = `
+          <div class="achievement-icon">${ach.emoji}</div>
+          <div class="achievement-info">
+            <h4>${ach.name}</h4>
+            <p>${ach.description}</p>
+          </div>
+          <div class="achievement-badge">🔒</div>
+        `;
+        lockedSection.appendChild(card);
+      });
+      
+      container.appendChild(lockedSection);
+    }
+  } catch (error) {
+    showGlobalMessage('Erro ao carregar conquistas', 'error', '❌');
+  }
+}
+
+async function loadStats() {
+  if (!state.playerId) return;
+  
+  try {
+    const stats = await getJson(`/player/${state.playerId}/stats`);
+    const container = document.getElementById('stats-content');
+    
+    container.innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">👤</div>
+          <div class="stat-info">
+            <h3>${stats.name}</h3>
+            <p>Level ${stats.level} - ${stats.ranking}</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-info">
+            <h3>${stats.totalScore.toLocaleString()}</h3>
+            <p>Pontuação Total</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-info">
+            <h3>x${stats.maxCombo}</h3>
+            <p>Combo Máximo</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <h3>${stats.questionsCompleted}</h3>
+            <p>Questões Completadas</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-info">
+            <h3>${stats.playTime}</h3>
+            <p>Tempo de Jogo</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">🏆</div>
+          <div class="stat-info">
+            <h3>${stats.achievements?.length || 0}/8</h3>
+            <p>Conquistas</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stats-phases">
+        <h3>📊 Estatísticas por Fase</h3>
+        
+        <div class="phase-stat">
+          <h4>🔄 Fase 1 - Sequência de Fluxo</h4>
+          <p>Acertos: ${stats.stats.phase1.correct}/${stats.stats.phase1.attempts}</p>
+          <p>Taxa de acerto: ${stats.stats.phase1.attempts > 0 ? Math.floor((stats.stats.phase1.correct / stats.stats.phase1.attempts) * 100) : 0}%</p>
+        </div>
+        
+        <div class="phase-stat">
+          <h4>🔗 Fase 2 - Conexão de Conceitos</h4>
+          <p>Acertos: ${stats.stats.phase2.correct}/${stats.stats.phase2.attempts}</p>
+          <p>Pontuação média: ${Math.floor(stats.stats.phase2.avgScore * 100)}%</p>
+        </div>
+        
+        <div class="phase-stat">
+          <h4>🎭 Fase 3 - Escolha do Caminho</h4>
+          <p>Acertos: ${stats.stats.phase3.correct}/${stats.stats.phase3.attempts}</p>
+          <p>Taxa de acerto: ${stats.stats.phase3.attempts > 0 ? Math.floor((stats.stats.phase3.correct / stats.stats.phase3.attempts) * 100) : 0}%</p>
+          <p>Acertos consecutivos: ${stats.stats.phase3.consecutiveCorrect}</p>
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    showGlobalMessage('Erro ao carregar estatísticas', 'error', '❌');
+  }
+}
+
+// ============================================
+// EASTER EGGS
+// ============================================
+async function showMotivation() {
+  try {
+    const response = await getJson('/easteregg/motivate');
+    const modal = document.getElementById('motivation-modal');
+    modal.innerHTML = `
+      <div class="motivation-content animate-bounce-in">
+        <div class="motivation-emoji">${response.emoji}</div>
+        <h2>${response.motivation}</h2>
+        <p>${response.message}</p>
+        <div class="bonus">${response.bonus}</div>
+        <button class="btn-primary" onclick="this.closest('.modal').classList.add('hidden')">
+          Obrigado! ❤️
+        </button>
+      </div>
+    `;
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.add('hidden'), 4000);
+  } catch (error) {
+    showGlobalMessage('Erro ao buscar motivação', 'error', '❌');
+  }
+}
+
+async function showJoke() {
+  try {
+    const response = await getJson('/easteregg/joke');
+    showGlobalMessage(`${response.setup}\n\n${response.punchline}`, 'info', '😄');
+  } catch (error) {
+    showGlobalMessage('Erro ao buscar piada', 'error', '❌');
+  }
+}
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+async function init() {
+  try {
+    showGlobalMessage('Carregando metadados do jogo...', 'info', '⏳');
+    
+    state.meta = await getJson('/meta');
+    
+    await initPlayer();
+    
+    await Promise.all([
+      loadPhase1(),
+      loadPhase2(),
+      loadPhase3()
+    ]);
+    
+    showGlobalMessage('Tudo pronto! Selecione uma fase e divirta-se! 🎮', 'success', '✅');
+    showView('phase1');
+    
+  } catch (error) {
+    console.error('Erro ao inicializar:', error);
+    showGlobalMessage('Erro ao carregar. Verifique se o servidor está em execução!', 'error', '❌');
+  }
+}
+
+// ============================================
+// EVENT LISTENERS
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Navegação
+  document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      showView(view);
+      
+      if (view === 'achievements') loadAchievements();
+      if (view === 'stats') loadStats();
+    });
+  });
+  
+  // Fase 1
+  document.getElementById('p1-question')?.addEventListener('change', renderPhase1Question);
+  document.getElementById('p1-reset')?.addEventListener('click', () => {
+    state.p1Answer = [];
+    renderPhase1Answer();
+  });
+  document.getElementById('p1-validate')?.addEventListener('click', validatePhase1);
+  document.getElementById('p1-hint')?.addEventListener('click', showPhase1Hint);
+  
+  // Fase 2
+  document.getElementById('p2-activity')?.addEventListener('change', renderPhase2Practices);
+  document.getElementById('p2-validate')?.addEventListener('click', validatePhase2);
+  document.getElementById('p2-hint')?.addEventListener('click', showPhase2Hint);
+  
+  // Fase 3
+  document.getElementById('p3-scenario')?.addEventListener('change', renderPhase3Scenario);
+  document.getElementById('p3-validate')?.addEventListener('click', validatePhase3);
+  document.getElementById('p3-hint')?.addEventListener('click', showPhase3Hint);
+  
+  // Easter eggs
+  document.getElementById('motivate-btn')?.addEventListener('click', showMotivation);
+  document.getElementById('joke-btn')?.addEventListener('click', showJoke);
+  
+  // Inicializar
+  init();
+});
