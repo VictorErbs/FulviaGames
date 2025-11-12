@@ -245,8 +245,3 @@ Os logs podem ser facilmente removidos ou configurados via variável de ambiente
 **Data**: 12 de novembro de 2025
 **Versão**: 2.0
 
----
-
-## 🎉 Conclusão
-
-O **ITIL Quest v2.0** está **100% funcional** e pronto para demonstração ao PO. Todos os componentes foram testados, debugados e validados. O jogo oferece uma experiência interativa e divertida para aprender ITIL de forma gamificada.
