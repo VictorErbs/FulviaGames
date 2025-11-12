@@ -9,7 +9,7 @@ const app = express();
 const publicDir = path.join(__dirname, '..', 'public');
 app.use(express.static(publicDir));
 
-const PORT = process.env.FRONT_PORT || 5500;
+const PORT = process.env.FRONT_PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Static frontend server on http://localhost:${PORT}`);
 });

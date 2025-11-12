@@ -64,6 +64,7 @@
       <button data-view="phase3" class="nav-btn">🎭 Fase 3: Decisão</button>
       <button data-view="achievements" class="nav-btn">🏆 Conquistas</button>
       <button data-view="stats" class="nav-btn">📊 Estatísticas</button>
+      <button id="reset-session-btn" class="nav-btn special" title="Trocar de jogador / nova sessão">👤 Trocar Jogador</button>
       <button id="motivate-btn" class="nav-btn special">✨ Motivação</button>
     </nav>
   </header>
@@ -177,6 +178,22 @@
       </div>
       <div id="stats-content" class="stats-container"></div>
     </section>
+
+    <!-- Seção Sobre o Jogo -->
+    <section id="about-game" class="view hidden">
+      <h2>Sobre o Jogo</h2>
+      <p>ITIL Quest é uma jornada interativa para aprender sobre gerenciamento de serviços de TI de forma divertida e envolvente.</p>
+    </section>
+
+    <!-- Seção Como Jogar -->
+    <section id="how-to-play" class="view hidden">
+      <h2>Como Jogar</h2>
+      <ol>
+        <li>Digite seu nome e clique em "Começar Aventura".</li>
+        <li>Responda às perguntas e complete as atividades para ganhar XP e subir de nível.</li>
+        <li>Explore os cenários e tome decisões estratégicas para avançar no jogo.</li>
+      </ol>
+    </section>
   </main>
 
   <!-- Modais e Overlays -->
@@ -184,11 +201,9 @@
   <div id="levelup-overlay" class="modal hidden"></div>
   <div id="motivation-modal" class="modal hidden"></div>
 
-  <footer>
-    <div class="footer-content">
-      <p>🎮 ITIL Quest v2.0 - Edição Lúdica | Desenvolvido com ❤️ para tornar o aprendizado incrível!</p>
-      <button id="joke-btn" class="btn-small">😄 Contar uma piada</button>
-    </div>
+  <!-- Rodapé fixo -->
+  <footer class="footer">
+    <p>🎮 ITIL Quest v2.0 - Edição Lúdica | Desenvolvido com ❤️ para tornar o aprendizado incrível!</p>
   </footer>
 
   <script src="app.js" type="module"></script>

@@ -21,19 +21,99 @@ const state = {
 // FUNÇÕES AUXILIARES
 // ============================================
 async function getJson(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, options);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  console.log('Fazendo requisição para:', `${API_BASE}${path}`, options);
+  try {
+    const res = await fetch(`${API_BASE}${path}`, options);
+    console.log('Status da resposta:', res.status, res.statusText);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const json = await res.json();
+    console.log('Dados recebidos:', json);
+    return json;
+  } catch (error) {
+    console.error('Erro em getJson:', error);
+    throw error;
+  }
+}
+
+// Handler dedicado para o botão "Começar Aventura"
+async function handleStartGameClick(e) {
+  e?.preventDefault?.();
+  console.log('[handleStartGameClick] Disparado');
+
+  const modal = document.getElementById('welcome-modal');
+  const input = document.getElementById('player-name-input');
+  const playerName = input?.value?.trim() || 'Jogador Anônimo';
+
+  console.log('[handleStartGameClick] Nome do jogador:', playerName);
+
+  try {
+    console.log('[handleStartGameClick] POST /player/init');
+    const response = await getJson('/player/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerName })
+    });
+
+    console.log('[handleStartGameClick] Resposta recebida:', response);
+    state.playerId = response.session.id;
+    state.playerData = response.session;
+    localStorage.setItem('itil-quest-player-id', state.playerId);
+
+    console.log('[handleStartGameClick] Ocultando modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+    showGlobalMessage(response.welcome, 'success', '🎉');
+    updatePlayerUI();
+    // Abrir fase inicial por padrão
+    showView('phase1');
+  } catch (error) {
+    console.error('[handleStartGameClick] Erro na requisição:', error);
+    showGlobalMessage('Erro ao criar sessão. Verifique se o servidor está rodando!', 'error', '❌');
+  }
 }
 
 function showView(viewId) {
-  document.querySelectorAll('.view').forEach(view => {
-    view.classList.toggle('hidden', view.id !== viewId);
+  console.log('[showView] chamado com:', viewId);
+  const views = document.querySelectorAll('.view');
+  console.log('[showView] total de views:', views.length);
+  views.forEach(view => {
+    if (!view.classList.contains('hidden')) {
+      console.log('[showView] ocultando:', view.id);
+    }
+    view.classList.add('hidden');
+    // Apenas force inline display para elementos de view
+    if (view.classList.contains('view')) {
+      view.style.display = 'none';
+    }
   });
-  
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.view === viewId);
-  });
+
+  const targetView = document.getElementById(viewId);
+  if (targetView) {
+  console.log('[showView] exibindo alvo:', targetView.id, 'classes:', [...targetView.classList]);
+  targetView.classList.remove('hidden');
+  // Apenas force inline display para elementos de view; para modal, deixe o CSS cuidar
+  if (targetView.classList.contains('view')) {
+    targetView.style.display = 'block';
+  } else if (viewId === 'welcome-modal') {
+    targetView.style.display = 'flex';
+  }
+    // Se alguém chamar showView para o modal de boas-vindas,
+    // garantimos que o botão esteja com handler ligado
+    if (viewId === 'welcome-modal') {
+      console.log('[showView] garantindo binding do botão de começar...');
+      const startBtn = document.getElementById('start-game-btn');
+      if (startBtn && startBtn.dataset.bound !== '1') {
+        console.log('[showView] (re)ligando handler do botão de começar via showView');
+        startBtn.addEventListener('click', handleStartGameClick);
+        startBtn.onclick = handleStartGameClick;
+        startBtn.dataset.bound = '1';
+      }
+    }
+  } else {
+    console.error(`[showView] View com ID '${viewId}' não encontrada.`);
+  }
 }
 
 function showGlobalMessage(message, type = 'info', emoji = '💬') {
@@ -58,42 +138,44 @@ function labelOf(activityId) {
 // SISTEMA DE JOGADOR
 // ============================================
 async function initPlayer() {
+  console.log('Iniciando initPlayer...');
+  console.log('state.playerId do localStorage:', localStorage.getItem('itil-quest-player-id'));
+  console.log('state.playerId atual:', state.playerId);
+  
   const modal = document.getElementById('welcome-modal');
   const input = document.getElementById('player-name-input');
   const startBtn = document.getElementById('start-game-btn');
 
+  console.log('Elementos encontrados:', { modal, input, startBtn });
+
   if (state.playerId) {
+    console.log('Jogador já existe, ocultando modal...');
     modal.classList.add('hidden');
     await loadPlayerData();
     return;
   }
 
+  console.log('Novo jogador, mostrando modal de boas-vindas...');
   modal.classList.remove('hidden');
   
-  startBtn.onclick = async () => {
-    const playerName = input.value.trim() || 'Jogador Anônimo';
-    
-    try {
-      const response = await getJson('/player/init', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerName })
-      });
-      
-      state.playerId = response.session.id;
-      state.playerData = response.session;
-      localStorage.setItem('itil-quest-player-id', state.playerId);
-      
-      modal.classList.add('hidden');
-      showGlobalMessage(response.welcome, 'success', '🎉');
-      updatePlayerUI();
-      
-    } catch (error) {
-      showGlobalMessage('Erro ao criar sessão. Verifique se o servidor está rodando!', 'error', '❌');
+  if (!startBtn) {
+    console.error('startBtn não encontrado! Verifique o HTML.');
+  } else {
+    if (startBtn.dataset.bound !== '1') {
+      console.log('Ligando handler do botão de começar...');
+      startBtn.addEventListener('click', handleStartGameClick);
+      // Fallback extra por segurança
+      startBtn.onclick = handleStartGameClick;
+      startBtn.dataset.bound = '1';
+      startBtn.disabled = false;
+      startBtn.style.cursor = 'pointer';
+    } else {
+      console.log('Handler do botão de começar já estava ligado.');
     }
-  };
+  }
   
   input.addEventListener('keypress', (e) => {
+    console.log('[initPlayer] keypress no input:', e.key);
     if (e.key === 'Enter') startBtn.click();
   });
 }
@@ -729,12 +811,17 @@ async function showJoke() {
 // ============================================
 async function init() {
   try {
-    showGlobalMessage('Carregando metadados do jogo...', 'info', '⏳');
+    console.log('Iniciando função init()...');
     
-    state.meta = await getJson('/meta');
-    
+    console.log('Chamando initPlayer() o mais cedo possível...');
     await initPlayer();
     
+    showGlobalMessage('Carregando metadados do jogo...', 'info', '⏳');
+    console.log('Carregando metadados...');
+    state.meta = await getJson('/meta');
+    console.log('Metadados carregados:', state.meta);
+    
+    console.log('Carregando fases...');
     await Promise.all([
       loadPhase1(),
       loadPhase2(),
@@ -742,7 +829,13 @@ async function init() {
     ]);
     
     showGlobalMessage('Tudo pronto! Selecione uma fase e divirta-se! 🎮', 'success', '✅');
-    showView('phase1');
+    if (!state.playerId) {
+      console.log('Garantindo que o modal de boas-vindas esteja visível (novo jogador)...');
+      showView('welcome-modal');
+    } else {
+      console.log('Jogador existente — abrindo Fase 1 por padrão');
+      showView('phase1');
+    }
     
   } catch (error) {
     console.error('Erro ao inicializar:', error);
@@ -754,40 +847,112 @@ async function init() {
 // EVENT LISTENERS
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('[DOMContentLoaded] disparado');
   // Navegação
   document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
+    console.log('Adicionando event listener ao botão:', btn.dataset.view);
     btn.addEventListener('click', () => {
       const view = btn.dataset.view;
+      console.log('Botão de navegação clicado:', view);
       showView(view);
       
       if (view === 'achievements') loadAchievements();
       if (view === 'stats') loadStats();
     });
   });
-  
-  // Fase 1
-  document.getElementById('p1-question')?.addEventListener('change', renderPhase1Question);
-  document.getElementById('p1-reset')?.addEventListener('click', () => {
-    state.p1Answer = [];
-    renderPhase1Answer();
-  });
-  document.getElementById('p1-validate')?.addEventListener('click', validatePhase1);
-  document.getElementById('p1-hint')?.addEventListener('click', showPhase1Hint);
-  
-  // Fase 2
-  document.getElementById('p2-activity')?.addEventListener('change', renderPhase2Practices);
-  document.getElementById('p2-validate')?.addEventListener('click', validatePhase2);
-  document.getElementById('p2-hint')?.addEventListener('click', showPhase2Hint);
-  
-  // Fase 3
-  document.getElementById('p3-scenario')?.addEventListener('change', renderPhase3Scenario);
-  document.getElementById('p3-validate')?.addEventListener('click', validatePhase3);
-  document.getElementById('p3-hint')?.addEventListener('click', showPhase3Hint);
-  
-  // Easter eggs
-  document.getElementById('motivate-btn')?.addEventListener('click', showMotivation);
-  document.getElementById('joke-btn')?.addEventListener('click', showJoke);
-  
-  // Inicializar
+
+  // Trocar jogador / resetar sessão
+  const resetBtn = document.getElementById('reset-session-btn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+      console.log('[resetSession] Limpando sessão do player...');
+      try {
+        localStorage.removeItem('itil-quest-player-id');
+        state.playerId = null;
+        state.playerData = null;
+        // Garantir rebind do botão de start
+        const startBtn = document.getElementById('start-game-btn');
+        if (startBtn) delete startBtn.dataset.bound;
+        showView('welcome-modal');
+        await initPlayer();
+      } catch (e) {
+        console.error('[resetSession] erro ao limpar sessão:', e);
+      }
+    });
+  }
+
+  // Bind Fase 1
+  const p1Question = document.getElementById('p1-question');
+  const p1Reset = document.getElementById('p1-reset');
+  const p1Validate = document.getElementById('p1-validate');
+  const p1Hint = document.getElementById('p1-hint');
+  if (p1Question) {
+    console.log('[bind] p1-question change -> renderPhase1Question');
+    p1Question.addEventListener('change', renderPhase1Question);
+  }
+  if (p1Reset) {
+    console.log('[bind] p1-reset click -> clear answer');
+    p1Reset.addEventListener('click', () => {
+      state.p1Answer = [];
+      renderPhase1Answer();
+      document.getElementById('p1-result').innerHTML = '';
+    });
+  }
+  if (p1Validate) {
+    console.log('[bind] p1-validate click -> validatePhase1');
+    p1Validate.addEventListener('click', validatePhase1);
+  }
+  if (p1Hint) {
+    console.log('[bind] p1-hint click -> showPhase1Hint');
+    p1Hint.addEventListener('click', showPhase1Hint);
+  }
+
+  // Bind Fase 2
+  const p2Activity = document.getElementById('p2-activity');
+  const p2Validate = document.getElementById('p2-validate');
+  const p2Hint = document.getElementById('p2-hint');
+  if (p2Activity) {
+    console.log('[bind] p2-activity change -> renderPhase2Practices');
+    p2Activity.addEventListener('change', renderPhase2Practices);
+  }
+  if (p2Validate) {
+    console.log('[bind] p2-validate click -> validatePhase2');
+    p2Validate.addEventListener('click', validatePhase2);
+  }
+  if (p2Hint) {
+    console.log('[bind] p2-hint click -> showPhase2Hint');
+    p2Hint.addEventListener('click', showPhase2Hint);
+  }
+
+  // Bind Fase 3
+  const p3Scenario = document.getElementById('p3-scenario');
+  const p3Validate = document.getElementById('p3-validate');
+  const p3Hint = document.getElementById('p3-hint');
+  if (p3Scenario) {
+    console.log('[bind] p3-scenario change -> renderPhase3Scenario');
+    p3Scenario.addEventListener('change', renderPhase3Scenario);
+  }
+  if (p3Validate) {
+    console.log('[bind] p3-validate click -> validatePhase3');
+    p3Validate.addEventListener('click', validatePhase3);
+  }
+  if (p3Hint) {
+    console.log('[bind] p3-hint click -> showPhase3Hint');
+    p3Hint.addEventListener('click', showPhase3Hint);
+  }
+
+  // Bind Easter Eggs
+  const motivateBtn = document.getElementById('motivate-btn');
+  const jokeBtn = document.getElementById('joke-btn');
+  if (motivateBtn) {
+    console.log('[bind] motivate-btn click -> showMotivation');
+    motivateBtn.addEventListener('click', showMotivation);
+  }
+  if (jokeBtn) {
+    console.log('[bind] joke-btn click -> showJoke');
+    jokeBtn.addEventListener('click', showJoke);
+  }
+
+  // Inicializar a aplicação
   init();
 });

@@ -141,35 +141,23 @@ header {
 /* Navigation */
 nav {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
   justify-content: center;
-  margin-top: 15px;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .nav-btn {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--primary);
   color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 500;
+  transition: background 0.3s;
 }
 
 .nav-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-}
-
-.nav-btn.active {
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
-}
-
-.nav-btn.special {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background: var(--secondary);
 }
 
 /* Main Content */
@@ -214,13 +202,30 @@ main {
 
 /* Views */
 .view {
-  background: white;
-  border-radius: 16px;
-  padding: 30px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  display: block;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin: 20px auto;
+  max-width: 800px;
 }
 
-.hidden { display: none !important; }
+.view.hidden {
+  display: none;
+}
+
+.view h2 {
+  font-size: 1.8rem;
+  color: var(--primary);
+  margin-bottom: 15px;
+}
+
+.view p, .view ol {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--dark);
+}
 
 /* Phase Header */
 .phase-header {
@@ -1026,6 +1031,20 @@ footer {
 
 .footer-content p {
   margin-bottom: 10px;
+}
+
+/* Rodapé fixo */
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: var(--dark);
+  color: white;
+  text-align: center;
+  padding: 10px 0;
+  font-size: 0.9rem;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Responsive */
