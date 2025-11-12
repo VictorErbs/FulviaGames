@@ -241,7 +241,7 @@ Os logs podem ser facilmente removidos ou configurados via variável de ambiente
 
 ## 👥 Contato
 
-**Desenvolvido por**: Victor Erbs e seus capamgas!
+**Desenvolvido por**: Victor Erbs e seus capangas!
 **Data**: 12 de novembro de 2025
 **Versão**: 2.0
 
