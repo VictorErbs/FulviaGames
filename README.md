@@ -4,12 +4,6 @@
 
 ---
 
-## 🎯 Resumo Executivo
-Lúdi
-O **ITIL Quest v2.0** está totalmente funcional e pronto para ser entregue ao PO. Todos os componentes foram testados, debugados e validados.
-
----
-
 ## 🔧 Correções Implementadas
 
 ### Frontend (app.js)
