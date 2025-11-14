@@ -96,6 +96,13 @@ header {
   gap: 5px;
 }
 
+/* Center the 'pontos' stat visually so it sits in the middle */
+.player-stats .stat-item:nth-child(2) {
+  align-items: center;
+  justify-items: center;
+  text-align: center;
+}
+
 .stat-label {
   font-size: 0.85rem;
   opacity: 0.9;
@@ -144,6 +151,12 @@ nav {
   justify-content: center;
   gap: 10px;
   margin-top: 20px;
+}
+
+nav button.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(30%);
 }
 
 .nav-btn {
@@ -438,6 +451,10 @@ main {
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   cursor: pointer;
+  cursor: pointer; /* Ensures the cursor is a pointer by default */
+}
+.choice-card[role="button"] {
+  cursor: pointer; /* Ensures the cursor is a pointer when role is button */
   transition: all 0.3s ease;
 }
 
@@ -656,6 +673,26 @@ main {
   border-left: 3px solid var(--primary);
 }
 
+/* Feedback: show expected and actual lists more clearly */
+.feedback-section {
+  margin-top: 12px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 8px;
+  padding: 8px;
+}
+.feedback-section h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.95rem;
+}
+.feedback-section ol {
+  margin: 0;
+  padding-left: 18px;
+}
+.muted {
+  opacity: 0.75;
+  font-size: 0.85rem;
+}
+
 /* Achievements */
 .achievements-progress {
   margin-bottom: 30px;
@@ -854,6 +891,15 @@ main {
   text-align: center;
   max-width: 500px;
   position: relative;
+}
+
+/* Prevent the glow overlay from blocking clicks on the modal content */
+.achievement-content {
+  z-index: 2; /* ensure content is above glow */
+}
+.achievement-glow {
+  z-index: 1;
+  pointer-events: none; /* allow clicks to pass through to the content */
 }
 
 .achievement-glow {

@@ -180,6 +180,14 @@ function calculateXP(baseXP, combo, perfect) {
   return Math.floor(xp);
 }
 
+// Award XP and return xp awarded, wrapped for safety and consistent checks
+function awardXP(session, baseXP, combo = 0, perfect = false) {
+  if (!session) return 0;
+  const xpGained = calculateXP(baseXP, combo, perfect);
+  session.xp += xpGained;
+  return xpGained;
+}
+
 function checkLevelUp(session) {
   const xpNeeded = session.level * 100;
   if (session.xp >= xpNeeded) {
@@ -192,6 +200,28 @@ function checkLevelUp(session) {
     };
   }
   return { leveledUp: false };
+}
+
+// Verifica se um jogador tem nível mínimo para acessar uma fase
+function ensurePlayerMinLevel(req, minLevel) {
+  const playerId = req.body?.playerId || req.query?.playerId || req.params?.playerId;
+  if (!playerId) return { ok: false, status: 400, message: 'playerId is required to check level' };
+  const session = playerSessions.get(playerId);
+  if (!session) return { ok: false, status: 404, message: 'session not found' };
+  if ((session.level || 1) < minLevel) return { ok: false, status: 403, message: `Seu nível atual é ${session.level}. Nível ${minLevel} necessário.` };
+  return { ok: true, session };
+}
+
+// Verifica se o jogador tem o nível exato (ou permitido) para acessar uma fase
+function ensurePlayerAllowedForPhase(req, phase) {
+  const playerId = req.body?.playerId || req.query?.playerId || req.params?.playerId;
+  if (!playerId) return { ok: false, status: 400, message: 'playerId is required to check access' };
+  const session = playerSessions.get(playerId);
+  if (!session) return { ok: false, status: 404, message: 'session not found' };
+  const mapping = { phase1: [1], phase2: [2], phase3: [3] };
+  const allowed = mapping[phase] || [1];
+  if (!allowed.includes(session.level)) return { ok: false, status: 403, message: `Seu nível atual é ${session.level}. ${phase} disponível apenas para ${allowed.join(', ')}.` };
+  return { ok: true, session };
 }
 
 // 🌐 API Endpoints
@@ -350,6 +380,7 @@ app.post('/api/phase1/validate', (req, res) => {
   } else {
     response.feedback = getRandomElement(ENCOURAGEMENT.retry);
     response.emoji = '💪';
+      response.points = 0;
     response.tip = 'Não desista! Todo mestre errou antes de acertar!';
   }
   
@@ -365,11 +396,12 @@ app.post('/api/phase1/validate', (req, res) => {
       session.maxCombo = Math.max(session.maxCombo, session.combo);
       
       // XP e conquistas
-      const xpGained = calculateXP(50, session.combo, true);
-      session.xp += xpGained;
+      const xpGained = awardXP(session, 50, session.combo, true);
       session.totalScore += response.score + 50;
       
       response.xpGained = xpGained;
+      // normalize points to be displayed consistently
+      response.points = response.score + 50; // base points (correctCount*10) + perfect bonus
       response.combo = session.combo;
       response.comboMessage = session.combo > 1 ? `🔥 COMBO x${session.combo}!` : null;
       
@@ -399,6 +431,7 @@ app.post('/api/phase1/validate', (req, res) => {
         combo: session.combo,
         totalScore: session.totalScore
       };
+      response.points = response.points || 0;
     } else {
       session.combo = 0;
       if (session.stats.phase1.attempts >= 3 && !session.achievements.includes('persistent')) {
@@ -416,6 +449,10 @@ app.post('/api/phase1/validate', (req, res) => {
 // 🔗 FASE 2 - Conexão de Conceitos (com sistema lúdico)
 
 app.get('/api/phase2/options', (req, res) => {
+  // Block phase 2 for players under level 2
+  const check = ensurePlayerMinLevel(req, 2);
+  if (!check.ok) return res.status(check.status).json({ error: check.message });
+
   res.json({ 
     activities: ACTIVITIES.map(a => ({ ...a, emoji: '🎯' })),
     practices: PRACTICES.map(p => ({ ...p, emoji: '⚙️' })),
@@ -443,6 +480,9 @@ app.get('/api/phase2/hint', (req, res) => {
 });
 
 app.post('/api/phase2/validate', (req, res) => {
+  // Security: only players of level >= 2 can validate phase 2
+  const check = ensurePlayerMinLevel(req, 2);
+  if (!check.ok) return res.status(check.status).json({ error: check.message });
   const { activityId, selectedPracticeIds, playerId } = req.body || {};
   
   if (!ACTIVITY_BY_ID[activityId]) {
@@ -504,9 +544,9 @@ app.post('/api/phase2/validate', (req, res) => {
       session.combo++;
       session.maxCombo = Math.max(session.maxCombo, session.combo);
       
-      const xpGained = calculateXP(75, session.combo, true);
-      session.xp += xpGained;
+      const xpGained = awardXP(session, 75, session.combo, true);
       session.totalScore += 100;
+      response.points = 100;
       
       response.xpGained = xpGained;
       response.combo = session.combo;
@@ -537,8 +577,7 @@ app.post('/api/phase2/validate', (req, res) => {
       };
     } else {
       session.combo = 0;
-      const xpGained = Math.floor(score * 30);
-      session.xp += xpGained;
+      const xpGained = awardXP(session, Math.floor(score * 30), 0, false);
       response.xpGained = xpGained;
     }
   }
@@ -549,6 +588,10 @@ app.post('/api/phase2/validate', (req, res) => {
 // 🎭 FASE 3 - Escolha do Caminho (com sistema lúdico)
 
 app.get('/api/phase3/scenarios', (req, res) => {
+  // Block Phase 3 for players below level 3
+  const check = ensurePlayerMinLevel(req, 3);
+  if (!check.ok) return res.status(check.status).json({ error: check.message });
+
   const payload = PHASE3_SCENARIOS.map(s => ({ 
     id: s.id, 
     input: `🎭 ${s.input}`, 
@@ -582,6 +625,9 @@ app.get('/api/phase3/hint', (req, res) => {
 });
 
 app.post('/api/phase3/validate', (req, res) => {
+  // Security: only players of level >= 3 can validate phase 3
+  const check = ensurePlayerMinLevel(req, 3);
+  if (!check.ok) return res.status(check.status).json({ error: check.message });
   const { scenarioId, choiceActivityId, playerId } = req.body || {};
   const s = PHASE3_SCENARIOS.find(x => x.id === scenarioId);
   
@@ -607,7 +653,7 @@ app.post('/api/phase3/validate', (req, res) => {
     response.emoji = '🎯';
     response.message = 'Decisão perfeita! Você entendeu o contexto! 🌟';
     response.bonus = '🎁 +150 pontos!';
-  } else {
+    } else {
     response.feedback = getRandomElement(ENCOURAGEMENT.retry);
     response.emoji = '🤔';
     response.tip = 'Analise o tipo de situação: é estratégica, operacional ou relacionada a parcerias?';
@@ -626,9 +672,9 @@ app.post('/api/phase3/validate', (req, res) => {
       session.combo++;
       session.maxCombo = Math.max(session.maxCombo, session.combo);
       
-      const xpGained = calculateXP(100, session.combo, true);
-      session.xp += xpGained;
+      const xpGained = awardXP(session, 100, session.combo, true);
       session.totalScore += 150;
+      response.points = 150;
       
       response.xpGained = xpGained;
       response.combo = session.combo;
@@ -674,10 +720,10 @@ app.post('/api/phase3/validate', (req, res) => {
     } else {
       session.combo = 0;
       session.stats.phase3.consecutiveCorrect = 0;
-      const xpGained = 20;
-      session.xp += xpGained;
+      const xpGained = awardXP(session, 20, 0, false);
       response.xpGained = xpGained;
       response.consolation = '💙 +20 XP por tentar! Continue praticando!';
+      response.points = 0;
     }
   }
   
@@ -704,7 +750,7 @@ app.get('/api/easteregg/motivate', (req, res) => {
     motivation: getRandomElement(motivations),
     emoji: '😊',
     message: 'Sempre que precisar de ânimo, estou aqui!',
-    bonus: '🎁 +10 XP por visitar o oásis da motivação!'
+    // NOTE: no XP is awarded here - motivation is just encouragement
   });
 });
 

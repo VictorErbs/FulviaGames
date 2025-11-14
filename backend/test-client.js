@@ -122,6 +122,7 @@ async function demonstratePhase1(playerId) {
       log(`Pontuação: ${result.score}`, 'yellow');
       if (result.bonus) log(result.bonus, 'magenta');
       if (result.xpGained) log(`XP Ganho: +${result.xpGained}`, 'cyan');
+      if (result.points !== undefined) log(`Pontos Ganhos: +${result.points}`, 'magenta');
       if (result.combo) log(`${result.comboMessage}`, 'red');
       
       if (result.achievements && result.achievements.length > 0) {

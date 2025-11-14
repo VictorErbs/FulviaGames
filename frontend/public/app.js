@@ -75,6 +75,15 @@ async function handleStartGameClick(e) {
 }
 
 function showView(viewId) {
+  // Prevent navigation to locked phases
+  if (viewId && viewId.startsWith('phase')) {
+    const minForView = viewId === 'phase1' ? 1 : viewId === 'phase2' ? 2 : viewId === 'phase3' ? 3 : 1;
+    const level = state.playerData?.level || 1;
+    if (level < minForView) {
+        showGlobalMessage(`Acesso bloqueado: alcance nível ${minForView} para desbloquear ${viewId}.`, 'warning', '🔒');
+      return;
+    }
+  }
   console.log('[showView] chamado com:', viewId);
   const views = document.querySelectorAll('.view');
   console.log('[showView] total de views:', views.length);
@@ -221,6 +230,22 @@ function updatePlayerUI() {
   } else {
     document.getElementById('combo-indicator').innerHTML = '';
   }
+
+  // Phase gating: allow phases based on minimum player level (cumulative unlocking)
+  const phaseMinLevel = { phase1: 1, phase2: 2, phase3: 3 };
+  document.querySelectorAll('nav button[data-view]').forEach(btn => {
+    const view = btn.getAttribute('data-view');
+    const required = phaseMinLevel[view] || 1;
+    if (data.level >= required) {
+      btn.removeAttribute('disabled');
+      btn.classList.remove('locked');
+      btn.title = '';
+    } else {
+      btn.setAttribute('disabled', 'disabled');
+      btn.classList.add('locked');
+      btn.title = `Bloqueado — alcance nível ${required} para desbloquear`;
+    }
+  });
 }
 
 // ============================================
@@ -237,13 +262,12 @@ function showAchievementModal(achievementData) {
       <h2>🎉 Conquista Desbloqueada!</h2>
       <h3>${achievementData.achievement.name}</h3>
       <p>${achievementData.achievement.description}</p>
-      <button class="btn-primary" onclick="this.closest('.modal').classList.add('hidden')">
-        Incrível! ✨
-      </button>
+      <button class="btn-primary close-modal">Incrível! ✨</button>
     </div>
   `;
   modal.classList.remove('hidden');
-  setTimeout(() => modal.classList.add('hidden'), 5000);
+  // Close button handled via modal delegation (see DOMContentLoaded handlers)
+  // Removed auto-hide: user must close achievements manually by pressing the button
 }
 
 function showLevelUpModal(levelUpData) {
@@ -275,10 +299,25 @@ function displayFeedback(result, targetElement) {
   
   if (result.accuracy) html += `<div class="feedback-stat">📊 Precisão: <strong>${result.accuracy}</strong></div>`;
   if (result.percentage) html += `<div class="feedback-stat">📈 Pontuação: <strong>${result.percentage}</strong></div>`;
-  if (result.score !== undefined && typeof result.score === 'number') {
+  // Prefer server-provided points (normalized). Fallback to older score display if not present.
+  if (result.points !== undefined && typeof result.points === 'number') {
+    html += `<div class="feedback-stat">⭐ Pontos: <strong>+${result.points}</strong></div>`;
+  } else if (result.score !== undefined && typeof result.score === 'number') {
+    // legacy: some endpoints return fractional score; multiply to show relative points
     html += `<div class="feedback-stat">⭐ Pontos: <strong>+${Math.floor(result.score * 100)}</strong></div>`;
   }
   if (result.xpGained) html += `<div class="feedback-stat highlight">✨ XP Ganho: <strong>+${result.xpGained}</strong></div>`;
+
+  // If coming from Phase 1, show expected order and user's order for clarity
+  if (result.correctOrder && Array.isArray(result.correctOrder)) {
+    const expected = result.correctOrder.map((id, idx) => `<li><strong>${idx + 1}.</strong> ${labelOf(id)}</li>`).join('');
+    html += `<div class="feedback-section"><h4>🧭 Ordem Esperada</h4><ol>${expected}</ol></div>`;
+  }
+  if (result.diffs && Array.isArray(result.diffs)) {
+    // Show a readable map of answers
+    const gotList = result.diffs.map(d => `<li>${labelOf(d.got) || '—'} <small class="muted">(esperado: ${labelOf(d.expected)})</small></li>`).join('');
+    html += `<div class="feedback-section"><h4>📝 Sua Ordem</h4><ol>${gotList}</ol></div>`;
+  }
   if (result.bonus) html += `<div class="feedback-bonus">${result.bonus}</div>`;
   if (result.comboMessage) html += `<div class="feedback-combo">${result.comboMessage}</div>`;
   if (result.tip) html += `<div class="feedback-tip">💡 ${result.tip}</div>`;
@@ -322,7 +361,9 @@ async function loadPhase1() {
     state.p1Questions.forEach(q => {
       const option = document.createElement('option');
       option.value = q.id;
-      option.textContent = q.title.replace('🎯 ', '');
+      // Show numbered questions for clarity
+      const idx = state.p1Questions.indexOf(q);
+      option.textContent = `${idx + 1}. ${q.title.replace('🎯 ', '')}`;
       select.appendChild(option);
     });
     
@@ -357,12 +398,33 @@ function renderPhase1Question() {
       <button class="btn-add">+</button>
     `;
     
-    card.querySelector('.btn-add').onclick = () => {
+    card.querySelector('.btn-add').onclick = (e) => {
+      // prevent the click from also triggering the card's click handler
+      e.stopPropagation();
       if (!state.p1Answer.includes(activity.id)) {
         state.p1Answer.push(activity.id);
         renderPhase1Answer();
       }
     };
+
+    // Make the whole card clickable and keyboard-accessible
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.addEventListener('click', () => {
+      if (!state.p1Answer.includes(activity.id)) {
+        state.p1Answer.push(activity.id);
+        renderPhase1Answer();
+      }
+    });
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        if (!state.p1Answer.includes(activity.id)) {
+          state.p1Answer.push(activity.id);
+          renderPhase1Answer();
+        }
+      }
+    });
     
     choicesDiv.appendChild(card);
   });
@@ -449,7 +511,7 @@ async function showPhase1Hint() {
 // ============================================
 async function loadPhase2() {
   try {
-    const response = await getJson('/phase2/options');
+    const response = await getJson(`/phase2/options?playerId=${state.playerId}`);
     state.p2Data = response;
     
     if (response.message) showGlobalMessage(response.message, 'info', '🧩');
@@ -528,7 +590,7 @@ async function showPhase2Hint() {
 // ============================================
 async function loadPhase3() {
   try {
-    const response = await getJson('/phase3/scenarios');
+    const response = await getJson(`/phase3/scenarios?playerId=${state.playerId}`);
     state.p3Scenarios = response.scenarios || response;
     
     if (response.message) showGlobalMessage(response.message, 'info', '🗺️');
@@ -784,14 +846,13 @@ async function showMotivation() {
         <div class="motivation-emoji">${response.emoji}</div>
         <h2>${response.motivation}</h2>
         <p>${response.message}</p>
-        <div class="bonus">${response.bonus}</div>
-        <button class="btn-primary" onclick="this.closest('.modal').classList.add('hidden')">
-          Obrigado! ❤️
-        </button>
+        <!-- removed XP bonus from motivation modal: no XP should be awarded for motivation -->
+        <button class="btn-primary close-modal">Obrigado! ❤️</button>
       </div>
     `;
     modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.add('hidden'), 4000);
+    // Close handled by modal delegation
+    // Removed auto-hide: the motivation modal stays visible until the user clicks "Obrigado!"
   } catch (error) {
     showGlobalMessage('Erro ao buscar motivação', 'error', '❌');
   }
@@ -952,6 +1013,30 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('[bind] joke-btn click -> showJoke');
     jokeBtn.addEventListener('click', showJoke);
   }
+
+  // Modal overlay delegation: close when clicking overlay or any element with .close-modal
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (ev) => {
+      // click on overlay (modal itself) closes it
+      if (ev.target === modal) {
+        modal.classList.add('hidden');
+        return;
+      }
+
+      // click on a button or element with .close-modal closes the modal
+      const close = ev.target.closest('.close-modal');
+      if (close && modal.contains(close)) {
+        modal.classList.add('hidden');
+      }
+    });
+  });
+
+  // ESC closes active modals
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') {
+      document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
+    }
+  });
 
   // Inicializar a aplicação
   init();
