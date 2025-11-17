@@ -148,6 +148,12 @@ Acesse no navegador:
 - **`frontend/public/styles.css`**: Estilos modernos e responsivos
 - **`frontend/public/app.js`**: Lógica do jogo e integração com API
 
+### Logo do Projeto
+
+Coloque a imagem `logo.png` na pasta `frontend/public/assets/` — o frontend exibirá automaticamente no topo do site.
+
+Recomendo um arquivo PNG transparente ou otimizado com 72–150px de altura; o CSS adaptará a largura para telas pequenas. Se sua imagem não aparece após a atualização, limpe o cache do navegador ou renomeie o arquivo para `logo.png?v=2` para forçar o recarregamento.
+
 ### Componentes Implementados
 
 - ✅ Modal de boas-vindas com cadastro de jogador

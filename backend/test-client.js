@@ -146,7 +146,7 @@ async function demonstratePhase2(playerId) {
   
   // Buscar opções
   log('📚 Buscando atividades e práticas...', 'cyan');
-  const options = await makeRequest('/phase2/options');
+  const options = await makeRequest(`/phase2/options?playerId=${playerId}`);
   
   if (options) {
     log(`${options.message}`, 'yellow');
@@ -196,7 +196,7 @@ async function demonstratePhase3(playerId) {
   
   // Buscar cenários
   log('📚 Buscando cenários...', 'cyan');
-  const scenariosData = await makeRequest('/phase3/scenarios');
+  const scenariosData = await makeRequest(`/phase3/scenarios?playerId=${playerId}`);
   
   if (scenariosData && scenariosData.scenarios) {
     log(`${scenariosData.message}`, 'yellow');

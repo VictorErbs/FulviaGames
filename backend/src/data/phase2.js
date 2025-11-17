@@ -3,14 +3,8 @@ import { ACTIVITIES } from './activities.js';
 export const PHASE1_QUESTIONS = [
   {
     id: 'svc-canonical',
-    title: 'Ordem canônica de estudo',
-    description: 'Ordene as 6 atividades para um fluxo completo de alto nível.',
-    correctOrder: ['plan', 'engage', 'design-transition', 'obtain-build', 'deliver-support', 'improve']
-  },
-  {
-    id: 'new-compliance-requirement',
-    title: 'Novo requisito de conformidade',
-    description: 'Um novo requisito regulatório surgiu. Monte o fluxo típico.',
+    title: 'Fluxo Essencial',
+    description: 'Ordene as 6 atividades seguindo um fluxo prático e direto.',
     correctOrder: ['plan', 'engage', 'design-transition', 'obtain-build', 'deliver-support', 'improve']
   },
   {
@@ -19,6 +13,7 @@ export const PHASE1_QUESTIONS = [
     description: 'Um novo serviço será criado. Monte um fluxo de ponta a ponta.',
     correctOrder: ['engage', 'plan', 'design-transition', 'obtain-build', 'deliver-support', 'improve']
   }
+  
 ];
 
 export function shuffledChoicesForQuestion(questionId) {

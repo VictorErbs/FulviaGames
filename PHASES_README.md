@@ -17,17 +17,12 @@ Cada escolha apresenta 6 atividades que devem ser ordenadas corretamente. As ati
 
 ### Escolha a ordem correta — respostas
 
-1. **Escolha: Ordem canônica de estudo** (`svc-canonical`)
-   - Descrição: Ordene as 6 atividades para um fluxo completo de alto nível.
+1. **Escolha: Fluxo Essencial** (`svc-canonical`)
+   - Descrição: Ordene as 6 atividades seguindo um fluxo prático e direto.
    - Ordem correta (IDs / identificadores): `['plan', 'engage', 'design-transition', 'obtain-build', 'deliver-support', 'improve']`
    - Ordem correta (Rótulos): Planejar → Engajar → Projetar e Transicionar → Obter/Construir → Entregar e Suportar → Melhorar
 
-2. **Escolha: Novo requisito de conformidade** (`new-compliance-requirement`)
-   - Descrição: Um novo requisito regulatório surgiu. Monte o fluxo típico.
-   - Ordem correta (IDs / identificadores): `['plan', 'engage', 'design-transition', 'obtain-build', 'deliver-support', 'improve']`
-   - Ordem correta (Rótulos): Planejar → Engajar → Projetar e Transicionar → Obter/Construir → Entregar e Suportar → Melhorar
-
-3. **Escolha: Novo serviço ao portfólio** (`new-service-request`)
+2. **Escolha: Novo serviço ao portfólio** (`new-service-request`)
    - Descrição: Um novo serviço será criado. Monte um fluxo de ponta a ponta.
    - Ordem correta (IDs / identificadores): `['engage', 'plan', 'design-transition', 'obtain-build', 'deliver-support', 'improve']`
    - Ordem correta (Rótulos): Engajar → Planejar → Projetar e Transicionar → Obter/Construir → Entregar e Suportar → Melhorar

@@ -302,6 +302,22 @@ function displayFeedback(result, targetElement) {
   // Prefer server-provided points (normalized). Fallback to older score display if not present.
   if (result.points !== undefined && typeof result.points === 'number') {
     html += `<div class="feedback-stat">⭐ Pontos: <strong>+${result.points}</strong></div>`;
+    // Immediately show points delta in the header for snappy feedback
+    try {
+      const totalEl = document.getElementById('total-score');
+      const cur = parseInt(totalEl.textContent.replace(/\D/g, '')) || 0;
+      const newTotal = cur + result.points;
+      // smooth numeric counter
+      animateNumber(totalEl, cur, newTotal, 700);
+      // keep frontend state in sync while server stats are fetched
+      if (state.playerData) state.playerData.totalScore = newTotal;
+      // visual cue + floating token
+      totalEl.classList.add('points-added');
+      setTimeout(() => totalEl.classList.remove('points-added'), 900);
+      showFloatingPoints(result.points, totalEl);
+    } catch (e) {
+      console.warn('[displayFeedback] não foi possível animar pontos', e);
+    }
   } else if (result.score !== undefined && typeof result.score === 'number') {
     // legacy: some endpoints return fractional score; multiply to show relative points
     html += `<div class="feedback-stat">⭐ Pontos: <strong>+${Math.floor(result.score * 100)}</strong></div>`;
@@ -333,6 +349,8 @@ function displayFeedback(result, targetElement) {
     result.achievements.forEach(ach => {
       if (ach.unlocked) setTimeout(() => showAchievementModal(ach), 500);
     });
+    // Refresh achievements panel so unlocked achievements appear immediately
+    try { loadAchievements(); } catch (e) { console.warn('[displayFeedback] loadAchievements failed', e); }
   }
   
   if (result.levelUp && result.levelUp.leveledUp) {
@@ -342,7 +360,49 @@ function displayFeedback(result, targetElement) {
   if (result.playerStats) {
     state.playerData = { ...state.playerData, ...result.playerStats };
     updatePlayerUI();
+    // If player leveled up and now qualifies for additional phases, reload options
+    try {
+      if (state.playerData.level >= 2) loadPhase2();
+      if (state.playerData.level >= 3) loadPhase3();
+    } catch (e) {
+      console.warn('[displayFeedback] falha ao recarregar fases após level up', e);
+    }
   }
+}
+
+// Smoothly animate a numeric change in an element from `from` to `to` during `duration` ms
+function animateNumber(el, from, to, duration = 600) {
+  const start = performance.now();
+  const step = (ts) => {
+    const now = Math.min(1, (ts - start) / duration);
+    const value = Math.floor(from + (to - from) * easeOutQuad(now));
+    el.textContent = value.toLocaleString();
+    if (now < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function easeOutQuad(t) { return t * (2 - t); }
+
+// Show a floating +{points} token above the `anchorEl` then fade & remove it
+function showFloatingPoints(points, anchorEl) {
+  if (!points || points <= 0) return;
+  const flyer = document.createElement('div');
+  flyer.className = 'points-flyer';
+  flyer.textContent = `+${points}`;
+  document.body.appendChild(flyer);
+
+  const rect = anchorEl.getBoundingClientRect();
+  flyer.style.left = `${rect.left + rect.width / 2}px`;
+  flyer.style.top = `${rect.top - 6}px`;
+
+  // Force layout to pick up the initial position
+  // eslint-disable-next-line no-unused-expressions
+  flyer.offsetHeight;
+
+  flyer.classList.add('animate-fly');
+  setTimeout(() => flyer.classList.add('fade-out'), 700);
+  setTimeout(() => flyer.remove(), 1400);
 }
 
 // ============================================
@@ -883,11 +943,16 @@ async function init() {
     console.log('Metadados carregados:', state.meta);
     
     console.log('Carregando fases...');
-    await Promise.all([
-      loadPhase1(),
-      loadPhase2(),
-      loadPhase3()
-    ]);
+    // Load Phase1 always; Phase2/3 require playerId (level gating)
+    if (state.playerId) {
+      await Promise.all([
+        loadPhase1(),
+        loadPhase2(),
+        loadPhase3()
+      ]);
+    } else {
+      await loadPhase1();
+    }
     
     showGlobalMessage('Tudo pronto! Selecione uma fase e divirta-se! 🎮', 'success', '✅');
     if (!state.playerId) {
@@ -917,6 +982,9 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Botão de navegação clicado:', view);
       showView(view);
       
+      if (view === 'phase1') loadPhase1();
+      if (view === 'phase2') loadPhase2();
+      if (view === 'phase3') loadPhase3();
       if (view === 'achievements') loadAchievements();
       if (view === 'stats') loadStats();
     });

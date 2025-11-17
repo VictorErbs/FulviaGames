@@ -3,7 +3,7 @@ import cors from 'cors';
 
 import { ACTIVITIES, ACTIVITY_BY_ID } from './data/activities.js';
 import { PRACTICES } from './data/practices.js';
-import { PHASE1_QUESTIONS, shuffledChoicesForQuestion, compareOrder } from './data/phase1.js';
+import { PHASE1_QUESTIONS, shuffledChoicesForQuestion, compareOrder } from './data/phase2.js';
 import { PHASE3_SCENARIOS } from './data/phase3.js';
 
 const app = express();
@@ -61,15 +61,11 @@ const ENCOURAGEMENT = {
 const HINTS = {
   phase1: {
     'svc-canonical': [
-      'Pense no ciclo natural: primeiro planejamos, depois executamos!',
-      'Lembre-se: Plan → Engage → Design/Transition → Obtain/Build → Deliver/Support → Improve',
-      'Como uma receita: planejar ingredientes, conversar com convidados, preparar, cozinhar, servir e melhorar!'
+      'Siga um fluxo simples: Planejar → Engajar → Projetar/Transição → Obter/Construir → Entregar/Suportar → Melhorar.',
+      'Este é o fluxo essencial usado para entender um ciclo completo de serviço — é um ótimo ponto de partida.',
+      'Considere o objetivo do serviço e ajuste a ordem nas situações especiais.'
     ],
-    'new-compliance-requirement': [
-      'Conformidade começa com planejamento estratégico!',
-      'Requisitos regulatórios precisam de engajamento das partes interessadas.',
-      'O fluxo clássico funciona aqui também!'
-    ],
+    // removed extra scenario; keep only canonical and service-request hints
     'new-service-request': [
       'Novos serviços geralmente começam com uma demanda do cliente (Engage).',
       'Depois de entender a necessidade, planejamos os detalhes.',
@@ -125,6 +121,9 @@ const GAME_META = {
   activities: ACTIVITIES,
   achievements: ACHIEVEMENTS
 };
+
+// Config: XP por nível (constante para progressão linear)
+const XP_PER_LEVEL = 100;
 
 // 🎲 Funções Auxiliares
 function getRandomElement(arr) {
@@ -189,10 +188,13 @@ function awardXP(session, baseXP, combo = 0, perfect = false) {
 }
 
 function checkLevelUp(session) {
-  const xpNeeded = session.level * 100;
-  if (session.xp >= xpNeeded) {
+  let leveled = false;
+  while (session.xp >= XP_PER_LEVEL) {
+    session.xp -= XP_PER_LEVEL;
     session.level++;
-    session.xp -= xpNeeded;
+    leveled = true;
+  }
+  if (leveled) {
     return {
       leveledUp: true,
       newLevel: session.level,
@@ -275,9 +277,9 @@ app.get('/api/player/:playerId/stats', (req, res) => {
     playTime: `${playTime} minutos`,
     nextLevel: {
       level: session.level + 1,
-      xpNeeded: session.level * 100,
+      xpNeeded: XP_PER_LEVEL,
       xpCurrent: session.xp,
-      progress: Math.floor((session.xp / (session.level * 100)) * 100)
+      progress: Math.floor((session.xp / XP_PER_LEVEL) * 100)
     },
     ranking: session.level >= 10 ? '🧙 Guru' : 
              session.level >= 7 ? '🏆 Mestre' :
@@ -579,6 +581,20 @@ app.post('/api/phase2/validate', (req, res) => {
       session.combo = 0;
       const xpGained = awardXP(session, Math.floor(score * 30), 0, false);
       response.xpGained = xpGained;
+      const levelUp = checkLevelUp(session);
+      if (levelUp.leveledUp) response.levelUp = levelUp;
+      response.playerStats = {
+        level: session.level,
+        xp: session.xp,
+        combo: session.combo,
+        totalScore: session.totalScore
+      };
+      // award partial points for non-perfect answers to provide continuous feedback
+      const partialPoints = Math.floor(score * 100);
+      if (partialPoints > 0) {
+        session.totalScore += partialPoints;
+        response.points = partialPoints;
+      }
     }
   }
   
@@ -723,6 +739,14 @@ app.post('/api/phase3/validate', (req, res) => {
       const xpGained = awardXP(session, 20, 0, false);
       response.xpGained = xpGained;
       response.consolation = '💙 +20 XP por tentar! Continue praticando!';
+      const levelUp = checkLevelUp(session);
+      if (levelUp.leveledUp) response.levelUp = levelUp;
+      response.playerStats = {
+        level: session.level,
+        xp: session.xp,
+        combo: session.combo,
+        totalScore: session.totalScore
+      };
       response.points = 0;
     }
   }

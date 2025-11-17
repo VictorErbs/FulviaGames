@@ -32,6 +32,31 @@ header {
   margin-bottom: 15px;
 }
 
+/* Logo styling intentionally removed so PNG displays with its native size */
+/* Logo size handling: keep PNG native look (no background/shadow). Add size limits
+   so the logo fits headers on FullHD (1920px) and larger monitors. */
+/* Use height to preserve original image proportion (avoid flattening) */
+#site-logo {
+  display: block;
+  margin: 0 auto 10px;
+  width: auto;         /* prefer natural width */
+  max-width: 60%;      /* but limit width on small viewports */
+  height: 200px;        /* set header-friendly height */
+  max-height: 200px;   /* allow larger but limit vertical space */
+  object-fit: contain; /* keep source aspect ratio in case of constrained boxes */
+  background: none;    /* explicitly keep no background */
+  box-shadow: none;    /* make sure no shadow is present */
+}
+
+/* On larger screens (FullHD and above), let the logo be larger without background */
+@media (min-width: 1600px) {
+  #site-logo { height: 120px; max-width: none; }
+}
+
+@media (min-width: 1920px) {
+  #site-logo { height: 160px; }
+}
+
 .header-title h1 {
   font-size: 2rem;
   margin: 0;
@@ -112,6 +137,32 @@ header {
   font-size: 1.1rem;
   font-weight: bold;
 }
+
+/* Animation when points are added */
+.points-added {
+  transition: transform 0.3s ease, color 0.3s ease;
+  transform: scale(1.15);
+  color: var(--gold);
+  text-shadow: 0 4px 12px rgba(251, 191, 36, 0.6);
+}
+
+/* Floating +points token */
+.points-flyer {
+  position: absolute;
+  transform: translate(-50%, 0);
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--dark);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: bold;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  opacity: 1;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.7s ease;
+  z-index: 1200;
+}
+.points-flyer.animate-fly { transform: translate(-50%, -36px) scale(1.08); }
+.points-flyer.fade-out { opacity: 0; transform: translate(-50%, -56px) scale(1.15); }
 
 /* XP Bar */
 .xp-bar-container {
