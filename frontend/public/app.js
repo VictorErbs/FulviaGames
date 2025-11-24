@@ -21,13 +21,13 @@ const state = {
 // FUNÇÕES AUXILIARES
 // ============================================
 async function getJson(path, options = {}) {
-  console.log('Fazendo requisição para:', `${API_BASE}${path}`, options);
+  // console.log('Fazendo requisição para:', `${API_BASE}${path}`, options);
   try {
     const res = await fetch(`${API_BASE}${path}`, options);
-    console.log('Status da resposta:', res.status, res.statusText);
+    // console.log('Status da resposta:', res.status, res.statusText);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     const json = await res.json();
-    console.log('Dados recebidos:', json);
+    // console.log('Dados recebidos:', json);
     return json;
   } catch (error) {
     console.error('Erro em getJson:', error);
@@ -80,7 +80,7 @@ function showView(viewId) {
     const minForView = viewId === 'phase1' ? 1 : viewId === 'phase2' ? 2 : viewId === 'phase3' ? 3 : 1;
     const level = state.playerData?.level || 1;
     if (level < minForView) {
-        showGlobalMessage(`Acesso bloqueado: alcance nível ${minForView} para desbloquear ${viewId}.`, 'warning', '🔒');
+      showGlobalMessage(`Acesso bloqueado: alcance nível ${minForView} para desbloquear ${viewId}.`, 'warning', '🔒');
       return;
     }
   }
@@ -100,14 +100,14 @@ function showView(viewId) {
 
   const targetView = document.getElementById(viewId);
   if (targetView) {
-  console.log('[showView] exibindo alvo:', targetView.id, 'classes:', [...targetView.classList]);
-  targetView.classList.remove('hidden');
-  // Apenas force inline display para elementos de view; para modal, deixe o CSS cuidar
-  if (targetView.classList.contains('view')) {
-    targetView.style.display = 'block';
-  } else if (viewId === 'welcome-modal') {
-    targetView.style.display = 'flex';
-  }
+    console.log('[showView] exibindo alvo:', targetView.id, 'classes:', [...targetView.classList]);
+    targetView.classList.remove('hidden');
+    // Apenas force inline display para elementos de view; para modal, deixe o CSS cuidar
+    if (targetView.classList.contains('view')) {
+      targetView.style.display = 'block';
+    } else if (viewId === 'welcome-modal') {
+      targetView.style.display = 'flex';
+    }
     // Se alguém chamar showView para o modal de boas-vindas,
     // garantimos que o botão esteja com handler ligado
     if (viewId === 'welcome-modal') {
@@ -134,7 +134,7 @@ function showGlobalMessage(message, type = 'info', emoji = '💬') {
     </div>
   `;
   messageDiv.classList.add('show');
-  
+
   setTimeout(() => messageDiv.classList.remove('show'), 5000);
 }
 
@@ -150,7 +150,7 @@ async function initPlayer() {
   console.log('Iniciando initPlayer...');
   console.log('state.playerId do localStorage:', localStorage.getItem('itil-quest-player-id'));
   console.log('state.playerId atual:', state.playerId);
-  
+
   const modal = document.getElementById('welcome-modal');
   const input = document.getElementById('player-name-input');
   const startBtn = document.getElementById('start-game-btn');
@@ -166,7 +166,7 @@ async function initPlayer() {
 
   console.log('Novo jogador, mostrando modal de boas-vindas...');
   modal.classList.remove('hidden');
-  
+
   if (!startBtn) {
     console.error('startBtn não encontrado! Verifique o HTML.');
   } else {
@@ -182,7 +182,7 @@ async function initPlayer() {
       console.log('Handler do botão de começar já estava ligado.');
     }
   }
-  
+
   input.addEventListener('keypress', (e) => {
     console.log('[initPlayer] keypress no input:', e.key);
     if (e.key === 'Enter') startBtn.click();
@@ -191,7 +191,7 @@ async function initPlayer() {
 
 async function loadPlayerData() {
   if (!state.playerId) return;
-  
+
   try {
     const stats = await getJson(`/player/${state.playerId}/stats`);
     state.playerData = stats;
@@ -203,24 +203,24 @@ async function loadPlayerData() {
 
 function updatePlayerUI() {
   if (!state.playerData) return;
-  
+
   const data = state.playerData;
-  
+
   document.getElementById('player-name').textContent = data.name;
   document.getElementById('player-level-badge').textContent = `Nível ${data.level}`;
   document.getElementById('player-ranking').textContent = data.ranking || '🌱 Aprendiz';
-  
+
   const xpNeeded = data.nextLevel?.xpNeeded || data.level * 100;
   const xpCurrent = data.nextLevel?.xpCurrent ?? data.xp;
   const xpProgress = data.nextLevel?.progress || Math.floor((xpCurrent / xpNeeded) * 100);
-  
+
   document.getElementById('xp-bar').style.width = `${xpProgress}%`;
   document.getElementById('xp-text').textContent = `${xpCurrent}/${xpNeeded}`;
   document.getElementById('total-score').textContent = data.totalScore.toLocaleString();
-  
+
   const achievementsCount = data.achievements?.length || 0;
   document.getElementById('achievements-count').textContent = `${achievementsCount}/8`;
-  
+
   if (data.combo > 0) {
     document.getElementById('combo-indicator').innerHTML = `
       <div class="combo-fire pulse-animation">
@@ -253,7 +253,7 @@ function updatePlayerUI() {
 // ============================================
 function showAchievementModal(achievementData) {
   if (!achievementData.unlocked) return;
-  
+
   const modal = document.getElementById('achievement-modal');
   modal.innerHTML = `
     <div class="achievement-content animate-zoom-in">
@@ -290,13 +290,13 @@ function showLevelUpModal(levelUpData) {
 function displayFeedback(result, targetElement) {
   const isSuccess = result.correct || result.score === 1;
   const emoji = result.emoji || (isSuccess ? '🌟' : '🤔');
-  
+
   let html = `
     <div class="feedback-card ${isSuccess ? 'success' : 'partial'} animate-slide-in">
       <div class="feedback-emoji">${emoji}</div>
       <h3>${result.feedback || result.message || ''}</h3>
   `;
-  
+
   if (result.accuracy) html += `<div class="feedback-stat">📊 Precisão: <strong>${result.accuracy}</strong></div>`;
   if (result.percentage) html += `<div class="feedback-stat">📈 Pontuação: <strong>${result.percentage}</strong></div>`;
   // Prefer server-provided points (normalized). Fallback to older score display if not present.
@@ -341,10 +341,10 @@ function displayFeedback(result, targetElement) {
   if (result.correctActivity || result.correctActivityId) {
     html += `<div class="feedback-stat">✅ Resposta correta: <strong>${result.correctActivity || labelOf(result.correctActivityId)}</strong></div>`;
   }
-  
+
   html += `</div>`;
   targetElement.innerHTML = html;
-  
+
   if (result.achievements && result.achievements.length > 0) {
     result.achievements.forEach(ach => {
       if (ach.unlocked) setTimeout(() => showAchievementModal(ach), 500);
@@ -352,11 +352,11 @@ function displayFeedback(result, targetElement) {
     // Refresh achievements panel so unlocked achievements appear immediately
     try { loadAchievements(); } catch (e) { console.warn('[displayFeedback] loadAchievements failed', e); }
   }
-  
+
   if (result.levelUp && result.levelUp.leveledUp) {
     setTimeout(() => showLevelUpModal(result.levelUp), 1000);
   }
-  
+
   if (result.playerStats) {
     state.playerData = { ...state.playerData, ...result.playerStats };
     updatePlayerUI();
@@ -412,12 +412,12 @@ async function loadPhase1() {
   try {
     const response = await getJson('/phase1/questions');
     state.p1Questions = response.questions || response;
-    
+
     if (response.message) showGlobalMessage(response.message, 'info', '🚀');
-    
+
     const select = document.getElementById('p1-question');
     select.innerHTML = '';
-    
+
     state.p1Questions.forEach(q => {
       const option = document.createElement('option');
       option.value = q.id;
@@ -426,7 +426,7 @@ async function loadPhase1() {
       option.textContent = `${idx + 1}. ${q.title.replace('🎯 ', '')}`;
       select.appendChild(option);
     });
-    
+
     renderPhase1Question();
   } catch (error) {
     showGlobalMessage('Erro ao carregar questões da Fase 1', 'error', '❌');
@@ -436,19 +436,19 @@ async function loadPhase1() {
 function renderPhase1Question() {
   const select = document.getElementById('p1-question');
   const question = state.p1Questions.find(q => q.id === select.value) || state.p1Questions[0];
-  
+
   if (!question) return;
-  
+
   state.currentQuestion = question;
   state.p1Answer = [];
-  
+
   document.getElementById('p1-description').textContent = question.description;
   document.getElementById('p1-difficulty').textContent = question.difficulty || '⭐ Iniciante';
   document.getElementById('p1-result').innerHTML = '';
-  
+
   const choicesDiv = document.getElementById('p1-choices');
   choicesDiv.innerHTML = '';
-  
+
   (question.choices || []).forEach(activity => {
     const card = document.createElement('div');
     card.className = 'choice-card';
@@ -457,7 +457,7 @@ function renderPhase1Question() {
       <span class="choice-label">${activity.label}</span>
       <button class="btn-add">+</button>
     `;
-    
+
     card.querySelector('.btn-add').onclick = (e) => {
       // prevent the click from also triggering the card's click handler
       e.stopPropagation();
@@ -485,21 +485,21 @@ function renderPhase1Question() {
         }
       }
     });
-    
+
     choicesDiv.appendChild(card);
   });
-  
+
   renderPhase1Answer();
 }
 
 function renderPhase1Answer() {
   const answerDiv = document.getElementById('p1-answer');
   answerDiv.innerHTML = '';
-  
+
   if (state.p1Answer.length === 0) {
     answerDiv.innerHTML = '<div class="empty-state">Clique em + nas opções para adicionar</div>';
   }
-  
+
   state.p1Answer.forEach((id, index) => {
     const activity = state.meta.activities.find(a => a.id === id);
     const card = document.createElement('div');
@@ -513,7 +513,7 @@ function renderPhase1Answer() {
         <button class="btn-icon remove">×</button>
       </div>
     `;
-    
+
     const controls = card.querySelectorAll('.btn-icon');
     controls[0].onclick = () => {
       if (index > 0) {
@@ -531,10 +531,10 @@ function renderPhase1Answer() {
       state.p1Answer = state.p1Answer.filter(v => v !== id);
       renderPhase1Answer();
     };
-    
+
     answerDiv.appendChild(card);
   });
-  
+
   document.getElementById('p1-validate').disabled = state.p1Answer.length !== 6;
 }
 
@@ -549,7 +549,7 @@ async function validatePhase1() {
         playerId: state.playerId
       })
     });
-    
+
     displayFeedback(result, document.getElementById('p1-result'));
     await loadPlayerData();
   } catch (error) {
@@ -573,19 +573,19 @@ async function loadPhase2() {
   try {
     const response = await getJson(`/phase2/options?playerId=${state.playerId}`);
     state.p2Data = response;
-    
+
     if (response.message) showGlobalMessage(response.message, 'info', '🧩');
-    
+
     const select = document.getElementById('p2-activity');
     select.innerHTML = '';
-    
+
     response.activities.forEach(activity => {
       const option = document.createElement('option');
       option.value = activity.id;
       option.textContent = activity.label;
       select.appendChild(option);
     });
-    
+
     renderPhase2Practices();
   } catch (error) {
     showGlobalMessage('Erro ao carregar Fase 2', 'error', '❌');
@@ -596,7 +596,7 @@ function renderPhase2Practices() {
   const practicesDiv = document.getElementById('p2-practices');
   practicesDiv.innerHTML = '';
   document.getElementById('p2-result').innerHTML = '';
-  
+
   state.p2Data.practices.forEach(practice => {
     const card = document.createElement('label');
     card.className = 'practice-card';
@@ -606,6 +606,31 @@ function renderPhase2Practices() {
       <span class="practice-label">${practice.label}</span>
       <span class="practice-check">✓</span>
     `;
+
+    // Make the whole card clickable
+    card.onclick = (e) => {
+      // Prevent double toggle if clicking directly on the checkbox
+      if (e.target.type !== 'checkbox') {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked;
+      }
+      // Visual feedback
+      if (card.querySelector('input').checked) {
+        card.classList.add('selected');
+      } else {
+        card.classList.remove('selected');
+      }
+    };
+
+    // Add change listener to update class if checkbox is clicked directly
+    const checkbox = card.querySelector('input');
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        card.classList.add('selected');
+      } else {
+        card.classList.remove('selected');
+      }
+    });
     practicesDiv.appendChild(card);
   });
 }
@@ -614,7 +639,7 @@ async function validatePhase2() {
   try {
     const activityId = document.getElementById('p2-activity').value;
     const selected = Array.from(document.querySelectorAll('#p2-practices input:checked')).map(i => i.value);
-    
+
     const result = await getJson('/phase2/validate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -624,8 +649,25 @@ async function validatePhase2() {
         playerId: state.playerId
       })
     });
-    
+
     displayFeedback(result, document.getElementById('p2-result'));
+
+    // Visual feedback on cards
+    const practicesDiv = document.getElementById('p2-practices');
+    practicesDiv.querySelectorAll('.practice-card').forEach(card => {
+      card.classList.remove('correct', 'wrong', 'missed');
+      const input = card.querySelector('input');
+      const id = input.value;
+
+      if (result.correctMatches && result.correctMatches.includes(id)) {
+        card.classList.add('correct');
+      } else if (result.wrongSelections && result.wrongSelections.includes(id)) {
+        card.classList.add('wrong');
+      } else if (result.missed && result.missed.includes(id)) {
+        card.classList.add('missed');
+      }
+    });
+
     await loadPlayerData();
   } catch (error) {
     showGlobalMessage('Erro ao validar resposta', 'error', '❌');
@@ -652,19 +694,19 @@ async function loadPhase3() {
   try {
     const response = await getJson(`/phase3/scenarios?playerId=${state.playerId}`);
     state.p3Scenarios = response.scenarios || response;
-    
+
     if (response.message) showGlobalMessage(response.message, 'info', '🗺️');
-    
+
     const select = document.getElementById('p3-scenario');
     select.innerHTML = '';
-    
+
     state.p3Scenarios.forEach(scenario => {
       const option = document.createElement('option');
       option.value = scenario.id;
       option.textContent = scenario.input.replace('🎭 ', '').slice(0, 60) + '...';
       select.appendChild(option);
     });
-    
+
     renderPhase3Scenario();
   } catch (error) {
     showGlobalMessage('Erro ao carregar Fase 3', 'error', '❌');
@@ -674,34 +716,35 @@ async function loadPhase3() {
 function renderPhase3Scenario() {
   const select = document.getElementById('p3-scenario');
   const scenario = state.p3Scenarios.find(s => s.id === select.value) || state.p3Scenarios[0];
-  
+
   if (!scenario) return;
-  
+
   state.currentScenario = scenario;
   state.p3Choice = null;
-  
+
   document.getElementById('p3-input').textContent = scenario.input.replace('🎭 ', '');
   document.getElementById('p3-result').innerHTML = '';
   document.getElementById('p3-validate').disabled = true;
-  
+
   const optionsDiv = document.getElementById('p3-options');
   optionsDiv.innerHTML = '';
-  
+
   (scenario.options || state.meta.activities).forEach(activity => {
     const button = document.createElement('button');
     button.className = 'option-card';
+    button.dataset.id = activity.id; // Add ID for validation feedback
     button.innerHTML = `
       <span class="option-emoji">🎯</span>
       <span class="option-label">${activity.label}</span>
     `;
-    
+
     button.onclick = () => {
       state.p3Choice = activity.id;
       document.getElementById('p3-validate').disabled = false;
       optionsDiv.querySelectorAll('.option-card').forEach(b => b.classList.remove('selected'));
       button.classList.add('selected');
     };
-    
+
     optionsDiv.appendChild(button);
   });
 }
@@ -717,8 +760,29 @@ async function validatePhase3() {
         playerId: state.playerId
       })
     });
-    
+
     displayFeedback(result, document.getElementById('p3-result'));
+
+    // Visual feedback on options
+    const optionsDiv = document.getElementById('p3-options');
+    optionsDiv.querySelectorAll('.option-card').forEach(btn => {
+      btn.classList.remove('correct', 'wrong');
+      const id = btn.dataset.id;
+
+      if (id === state.p3Choice) {
+        if (result.correct) {
+          btn.classList.add('correct');
+        } else {
+          btn.classList.add('wrong');
+        }
+      }
+
+      // Show correct answer if user got it wrong
+      if (!result.correct && id === result.correctActivityId) {
+        btn.classList.add('correct');
+      }
+    });
+
     await loadPlayerData();
   } catch (error) {
     showGlobalMessage('Erro ao validar resposta', 'error', '❌');
@@ -743,12 +807,12 @@ async function showPhase3Hint() {
 // ============================================
 async function loadAchievements() {
   if (!state.playerId) return;
-  
+
   try {
     const response = await getJson(`/player/${state.playerId}/achievements`);
     const container = document.getElementById('achievements-list');
     const progress = document.getElementById('achievements-progress');
-    
+
     progress.innerHTML = `
       <div class="progress-header">
         <h3>Progresso: ${response.progress} (${response.percentage}%)</h3>
@@ -757,14 +821,14 @@ async function loadAchievements() {
         </div>
       </div>
     `;
-    
+
     container.innerHTML = '';
-    
+
     if (response.unlocked.length > 0) {
       const unlockedSection = document.createElement('div');
       unlockedSection.className = 'achievements-section';
       unlockedSection.innerHTML = '<h3>✨ Conquistas Desbloqueadas</h3>';
-      
+
       response.unlocked.forEach(ach => {
         const card = document.createElement('div');
         card.className = 'achievement-card unlocked';
@@ -778,15 +842,15 @@ async function loadAchievements() {
         `;
         unlockedSection.appendChild(card);
       });
-      
+
       container.appendChild(unlockedSection);
     }
-    
+
     if (response.locked.length > 0) {
       const lockedSection = document.createElement('div');
       lockedSection.className = 'achievements-section';
       lockedSection.innerHTML = '<h3>🔒 A Desbloquear</h3>';
-      
+
       response.locked.forEach(ach => {
         const card = document.createElement('div');
         card.className = 'achievement-card locked';
@@ -800,7 +864,7 @@ async function loadAchievements() {
         `;
         lockedSection.appendChild(card);
       });
-      
+
       container.appendChild(lockedSection);
     }
   } catch (error) {
@@ -810,11 +874,11 @@ async function loadAchievements() {
 
 async function loadStats() {
   if (!state.playerId) return;
-  
+
   try {
     const stats = await getJson(`/player/${state.playerId}/stats`);
     const container = document.getElementById('stats-content');
-    
+
     container.innerHTML = `
       <div class="stats-grid">
         <div class="stat-card">
@@ -933,15 +997,15 @@ async function showJoke() {
 async function init() {
   try {
     console.log('Iniciando função init()...');
-    
+
     console.log('Chamando initPlayer() o mais cedo possível...');
     await initPlayer();
-    
+
     showGlobalMessage('Carregando metadados do jogo...', 'info', '⏳');
     console.log('Carregando metadados...');
     state.meta = await getJson('/meta');
     console.log('Metadados carregados:', state.meta);
-    
+
     console.log('Carregando fases...');
     // Load Phase1 always; Phase2/3 require playerId (level gating)
     if (state.playerId) {
@@ -953,7 +1017,7 @@ async function init() {
     } else {
       await loadPhase1();
     }
-    
+
     showGlobalMessage('Tudo pronto! Selecione uma fase e divirta-se! 🎮', 'success', '✅');
     if (!state.playerId) {
       console.log('Garantindo que o modal de boas-vindas esteja visível (novo jogador)...');
@@ -962,7 +1026,7 @@ async function init() {
       console.log('Jogador existente — abrindo Fase 1 por padrão');
       showView('phase1');
     }
-    
+
   } catch (error) {
     console.error('Erro ao inicializar:', error);
     showGlobalMessage('Erro ao carregar. Verifique se o servidor está em execução!', 'error', '❌');
@@ -981,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const view = btn.dataset.view;
       console.log('Botão de navegação clicado:', view);
       showView(view);
-      
+
       if (view === 'phase1') loadPhase1();
       if (view === 'phase2') loadPhase2();
       if (view === 'phase3') loadPhase3();

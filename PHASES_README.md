@@ -1,90 +1,91 @@
-# ⚙️ Itens e Respostas - ITIL Quest — Fases 1/2/3
+# 🎮 Grimoire do Mestre ITIL - Guia de Respostas
 
-Este documento descreve as perguntas/itens das três fases do jogo e as respostas corretas usadas pelo backend (para referência de desenvolvedores e instrutores). Todo o conteúdo abaixo está em Português (pt-BR).
-
----
-
-## 🔁 Fase 1 — Sequência de Fluxo (Ordenação)
-
-Cada escolha apresenta 6 atividades que devem ser ordenadas corretamente. As atividades disponíveis são:
-
-- Planejar (`plan`)
-- Engajar (`engage`)
-- Projetar e Transicionar (`design-transition`)
-- Obter/Construir (`obtain-build`)
-- Entregar e Suportar (`deliver-support`)
-- Melhorar (`improve`)
-
-### Escolha a ordem correta — respostas
-
-1. **Escolha: Fluxo Essencial** (`svc-canonical`)
-   - Descrição: Ordene as 6 atividades seguindo um fluxo prático e direto.
-   - Ordem correta (IDs / identificadores): `['plan', 'engage', 'design-transition', 'obtain-build', 'deliver-support', 'improve']`
-   - Ordem correta (Rótulos): Planejar → Engajar → Projetar e Transicionar → Obter/Construir → Entregar e Suportar → Melhorar
-
-2. **Escolha: Novo serviço ao portfólio** (`new-service-request`)
-   - Descrição: Um novo serviço será criado. Monte um fluxo de ponta a ponta.
-   - Ordem correta (IDs / identificadores): `['engage', 'plan', 'design-transition', 'obtain-build', 'deliver-support', 'improve']`
-   - Ordem correta (Rótulos): Engajar → Planejar → Projetar e Transicionar → Obter/Construir → Entregar e Suportar → Melhorar
+Bem-vindo, aventureiro! Este pergaminho contém os segredos para dominar as três fases do ITIL Quest. Use com sabedoria para guiar sua jornada! 🗺️✨
 
 ---
 
-## 🔗 Fase 2 — Conexão de Conceitos (Associe práticas às atividades)
+## 🔁 Fase 1: O Fluxo do Poder (Ordenação)
+*Missão: Ordenar as energias para criar valor!*
 
-A Fase 2 pede que o jogador selecione quais práticas são associadas principalmente a cada atividade.
-Abaixo está a lista de práticas e a `activity` correta para cada uma (mapeamento `primaryActivityId`).
+### 🌟 O Caminho Canônico (Fluxo Essencial)
+Para criar valor de forma padrão, siga este ritual sagrado:
+1. **Planejar** (`plan`) 🗺️
+2. **Engajar** (`engage`) 🤝
+3. **Projetar e Transicionar** (`design-transition`) 🎨
+4. **Obter/Construir** (`obtain-build`) 🏗️
+5. **Entregar e Suportar** (`deliver-support`) 🚚
+6. **Melhorar** (`improve`) 📈
 
-- `incident-management` — Gestão de Incidentes → Entregar e Suportar (`deliver-support`)
-- `service-desk` — Central de Serviços (Service Desk) → Entregar e Suportar (`deliver-support`)
-- `problem-management` — Gestão de Problemas → Melhorar (`improve`)
-- `change-enable` — Habilitação de Mudança → Projetar e Transicionar (`design-transition`)
-- `release-management` — Gestão de Releases → Projetar e Transicionar (`design-transition`)
-- `service-validation-testing` — Validação e Testes de Serviço → Projetar e Transicionar (`design-transition`)
-- `software-dev-mgmt` — Desenvolvimento e Gestão de Software → Obter/Construir (`obtain-build`)
-- `it-asset-management` — Gestão de Ativos de TI → Obter/Construir (`obtain-build`)
-- `deployment-management` — Gestão de Deploy → Projetar e Transicionar (`design-transition`)
-- `risk-management` — Gestão de Riscos → Planejar (`plan`)
-- `information-security` — Gestão de Segurança da Informação → Planejar (`plan`)
-- `supplier-management` — Gestão de Fornecedores → Engajar (`engage`)
-- `relationship-management` — Gestão de Relacionamento → Engajar (`engage`)
-- `service-level-management` — Gestão de Níveis de Serviço → Engajar (`engage`)
-- `continual-improvement` — Melhoria Contínua → Melhorar (`improve`)
-- `measurement-reporting` — Medição e Relato → Melhorar (`improve`)
-
-Observação: Para o jogo, a validação da Fase 2 usa `primaryActivityId` para verificar se as práticas selecionadas pertencem à atividade escolhida.
-
-⚠️ **Desbloqueio por nível**: Cada fase é desbloqueada pelo nível do jogador (1 → Fase 1, 2 → Fase 2, 3 → Fase 3). Jogadores só podem acessar fases com o nível mínimo requerido.
+### 🌟 O Caminho da Inovação (Novo Serviço)
+Quando uma nova demanda surge, o ritual muda ligeiramente:
+1. **Engajar** (`engage`) 🤝 *(Comece ouvindo o chamado do cliente!)*
+2. **Planejar** (`plan`) 🗺️
+3. **Projetar e Transicionar** (`design-transition`) 🎨
+4. **Obter/Construir** (`obtain-build`) 🏗️
+5. **Entregar e Suportar** (`deliver-support`) 🚚
+6. **Melhorar** (`improve`) 📈
 
 ---
 
-## 🎭 Fase 3 — Cenários de Decisão (Escolha a atividade correta)
+## 🔗 Fase 2: A Teia de Conexões (Associação)
+*Missão: Conectar as ferramentas (Práticas) aos seus propósitos (Atividades).*
 
-A Fase 3 apresenta cenários (situações) e pergunta qual atividade deve responder primeiro.
+Aqui está o mapa das conexões sagradas. Se você está perdido na floresta das práticas, consulte este guia:
 
-### Cenários e respostas corretas
+### 🗺️ Planejar (`plan`)
+*Onde a estratégia nasce e o futuro é desenhado.*
+- **Gestão de Riscos** (`risk-management`) 🎲
+- **Segurança da Informação** (`information-security`) 🔒
 
-1. **Cenário: market-direction-change**
-   - Enunciado: "A alta gerência definiu uma nova direção de mercado. Qual atividade deve ser ativada primeiro?"
-   - Resposta correta: `plan` — Planejar
-   - Explicação: Mudanças estratégicas iniciam com Planejar (definição de objetivos, políticas e planos).
+### 🤝 Engajar (`engage`)
+*Onde as relações florescem e os acordos são firmados.*
+- **Gestão de Fornecedores** (`supplier-management`) 📦
+- **Gestão de Relacionamento** (`relationship-management`) ❤️
+- **Gestão de Níveis de Serviço** (`service-level-management`) 📊
 
-2. **Cenário: major-incident**
-   - Enunciado: "Um incidente crítico afetou um serviço essencial. Qual atividade deve iniciar a resposta?"
-   - Resposta correta: `deliver-support` — Entregar e Suportar
-   - Explicação: Respostas operacionais a incidentes acontecem em Entregar e Suportar (Service Desk, Resolução de Incidentes, etc.).
+### 🎨 Projetar e Transicionar (`design-transition`)
+*Onde o novo ganha forma e se prepara para o mundo.*
+- **Habilitação de Mudança** (`change-enable`) 🔄
+- **Gestão de Releases** (`release-management`) 🚀
+- **Validação e Testes** (`service-validation-testing`) ✅
+- **Gestão de Deploy** (`deployment-management`) 🚢
 
-3. **Cenário: new-vendor-contract**
-   - Enunciado: "Um novo contrato com fornecedor precisa ser estabelecido. Por onde começar?"
-   - Resposta correta: `engage` — Engajar
-   - Explicação: Gestão de relacionamento e acordos com fornecedores são iniciadas pela atividade Engajar.
+### 🏗️ Obter/Construir (`obtain-build`)
+*Onde a magia é forjada e os componentes são criados.*
+- **Desenvolvimento de Software** (`software-dev-mgmt`) 💻
+- **Gestão de Ativos de TI** (`it-asset-management`) 🏢
+
+### 🚚 Entregar e Suportar (`deliver-support`)
+*Onde o valor é entregue e o reino é protegido.*
+- **Gestão de Incidentes** (`incident-management`) 🚨
+- **Service Desk** (`service-desk`) 📞
+
+### 📈 Melhorar (`improve`)
+*Onde a perfeição é buscada e os problemas são resolvidos pela raiz.*
+- **Gestão de Problemas** (`problem-management`) 🧩
+- **Melhoria Contínua** (`continual-improvement`) 🔄
+- **Medição e Relato** (`measurement-reporting`) 📉
 
 ---
 
-## 🛠️ Instruções para Desenvolvedores
+## 🎭 Fase 3: O Oráculo das Decisões (Cenários)
+*Missão: Escolher o primeiro passo para cada desafio.*
 
-- Arquivos fonte (onde o conteúdo acima está definido):
-   - `backend/src/data/activities.js` — atividades e rótulos
-   - `backend/src/data/phase1.js` — questões/ordens corretas
-   - `backend/src/data/practices.js` — mapeamento de práticas → atividade
-   - `backend/src/data/phase3.js` — cenários e respostas corretas
+### 🔮 Cenário 1: Nova Direção de Mercado
+*"O rei mudou a estratégia! O que fazemos?"*
+- **Resposta:** **Planejar** (`plan`)
+- *Sabedoria:* Mudanças estratégicas começam no topo! É preciso alinhar a visão antes de agir.
+
+### 🔮 Cenário 2: Incidente Crítico
+*"O castelo está pegando fogo! Socorro!"*
+- **Resposta:** **Entregar e Suportar** (`deliver-support`)
+- *Sabedoria:* Apague o fogo e suporte os usuários agora! A análise vem depois.
+
+### 🔮 Cenário 3: Novo Contrato
+*"Um novo aliado se aproxima dos portões!"*
+- **Resposta:** **Engajar** (`engage`)
+- *Sabedoria:* Acordos e parcerias começam com um aperto de mão e uma boa conversa.
+
+---
+*Que este grimório ilumine seu caminho, nobre ITIL Warrior!* 🗡️🛡️
 
