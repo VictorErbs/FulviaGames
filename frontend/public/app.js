@@ -302,19 +302,12 @@ function displayFeedback(result, targetElement) {
   // Prefer server-provided points (normalized). Fallback to older score display if not present.
   if (result.points !== undefined && typeof result.points === 'number') {
     html += `<div class="feedback-stat">⭐ Pontos: <strong>+${result.points}</strong></div>`;
-    // Immediately show points delta in the header for snappy feedback
+    // Show floating points animation for visual feedback
     try {
       const totalEl = document.getElementById('total-score');
-      const cur = parseInt(totalEl.textContent.replace(/\D/g, '')) || 0;
-      const newTotal = cur + result.points;
-      // smooth numeric counter
-      animateNumber(totalEl, cur, newTotal, 700);
-      // keep frontend state in sync while server stats are fetched
-      if (state.playerData) state.playerData.totalScore = newTotal;
-      // visual cue + floating token
-      totalEl.classList.add('points-added');
-      setTimeout(() => totalEl.classList.remove('points-added'), 900);
       showFloatingPoints(result.points, totalEl);
+      // Note: totalScore will be updated when playerStats arrives from server
+      // We don't update it locally to avoid duplication
     } catch (e) {
       console.warn('[displayFeedback] não foi possível animar pontos', e);
     }
@@ -358,8 +351,25 @@ function displayFeedback(result, targetElement) {
   }
 
   if (result.playerStats) {
+    // Animate totalScore change if it changed
+    const oldTotal = state.playerData?.totalScore || 0;
+    const newTotal = result.playerStats.totalScore || 0;
+
     state.playerData = { ...state.playerData, ...result.playerStats };
     updatePlayerUI();
+
+    // Animate the score counter if it changed
+    if (newTotal !== oldTotal) {
+      try {
+        const totalEl = document.getElementById('total-score');
+        animateNumber(totalEl, oldTotal, newTotal, 700);
+        totalEl.classList.add('points-added');
+        setTimeout(() => totalEl.classList.remove('points-added'), 900);
+      } catch (e) {
+        console.warn('[displayFeedback] não foi possível animar totalScore', e);
+      }
+    }
+
     // If player leveled up and now qualifies for additional phases, reload options
     try {
       if (state.playerData.level >= 2) loadPhase2();
@@ -588,7 +598,12 @@ async function loadPhase2() {
 
     renderPhase2Practices();
   } catch (error) {
-    showGlobalMessage('Erro ao carregar Fase 2', 'error', '❌');
+    if (error.message && error.message.includes('403')) {
+      console.log('Fase 2 bloqueada: nível insuficiente');
+      // Silently fail - this is expected for low-level players
+    } else {
+      showGlobalMessage('Erro ao carregar Fase 2', 'error', '❌');
+    }
   }
 }
 
@@ -709,7 +724,12 @@ async function loadPhase3() {
 
     renderPhase3Scenario();
   } catch (error) {
-    showGlobalMessage('Erro ao carregar Fase 3', 'error', '❌');
+    if (error.message && error.message.includes('403')) {
+      console.log('Fase 3 bloqueada: nível insuficiente');
+      // Silently fail - this is expected for low-level players
+    } else {
+      showGlobalMessage('Erro ao carregar Fase 3', 'error', '❌');
+    }
   }
 }
 
@@ -1007,16 +1027,31 @@ async function init() {
     console.log('Metadados carregados:', state.meta);
 
     console.log('Carregando fases...');
-    // Load Phase1 always; Phase2/3 require playerId (level gating)
-    if (state.playerId) {
-      await Promise.all([
-        loadPhase1(),
-        loadPhase2(),
-        loadPhase3()
-      ]);
-    } else {
-      await loadPhase1();
+    // Load Phase1 always; Phase2/3 require playerId and appropriate level
+    const loadPromises = [loadPhase1()];
+
+    if (state.playerId && state.playerData) {
+      const playerLevel = state.playerData.level || 1;
+      console.log('Nível do jogador:', playerLevel);
+
+      // Only load Phase 2 if player is level 2 or higher
+      if (playerLevel >= 2) {
+        console.log('Carregando Fase 2 (nível suficiente)');
+        loadPromises.push(loadPhase2());
+      } else {
+        console.log('Fase 2 bloqueada (requer nível 2)');
+      }
+
+      // Only load Phase 3 if player is level 3 or higher
+      if (playerLevel >= 3) {
+        console.log('Carregando Fase 3 (nível suficiente)');
+        loadPromises.push(loadPhase3());
+      } else {
+        console.log('Fase 3 bloqueada (requer nível 3)');
+      }
     }
+
+    await Promise.all(loadPromises);
 
     showGlobalMessage('Tudo pronto! Selecione uma fase e divirta-se! 🎮', 'success', '✅');
     if (!state.playerId) {

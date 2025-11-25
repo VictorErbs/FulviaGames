@@ -583,12 +583,7 @@ app.post('/api/phase2/validate', (req, res) => {
       response.xpGained = xpGained;
       const levelUp = checkLevelUp(session);
       if (levelUp.leveledUp) response.levelUp = levelUp;
-      response.playerStats = {
-        level: session.level,
-        xp: session.xp,
-        combo: session.combo,
-        totalScore: session.totalScore
-      };
+
       // award partial points for non-perfect answers to provide continuous feedback
       const partialPoints = Math.floor(score * 100);
       if (partialPoints > 0) {
@@ -597,6 +592,14 @@ app.post('/api/phase2/validate', (req, res) => {
       } else {
         response.points = 0;
       }
+
+      // Set playerStats AFTER updating totalScore
+      response.playerStats = {
+        level: session.level,
+        xp: session.xp,
+        combo: session.combo,
+        totalScore: session.totalScore
+      };
     }
   }
 
